@@ -79,3 +79,28 @@ fn hash_to_path(hash: &str) -> PathBuf {
 
     path
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hashing() {
+        let f = std::fs::read("test/test_file.txt").unwrap();
+        let h = hash_content(&f);
+        assert_eq!(
+            h,
+            "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de"
+        )
+    }
+
+    #[test]
+    fn test_get_dir() {
+        let hash = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
+        let dir = hash_to_path(hash);
+        assert_eq!(
+            dir.to_str().unwrap(),
+            "/tmp/rustore/f2/9b/c6/4a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de"
+        )
+    }
+}
