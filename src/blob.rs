@@ -28,23 +28,30 @@ impl Blob {
 
     pub fn from_hash(hash: &str) -> Result<Blob, &'static str> {
         let dir = hash_to_path(hash);
-        for entry in fs::read_dir(dir).unwrap() {
-            let path = entry.unwrap().path();
-            let content = fs::read(&path).unwrap();
-            let filename = path
-                .file_name()
-                .expect("Something went wrong extracting file name")
-                .to_str()
-                .expect("Could not convert filename to string")
-                .to_string();
-            let blob = Blob {
-                filename,
-                content,
-                hash: String::from_str(&hash).expect("oops"),
-            };
-            return Ok(blob);
+        let entries = fs::read_dir(dir);
+
+        match entries {
+            Ok(entries) => {
+                for entry in entries {
+                    let path = entry.unwrap().path();
+                    let content = fs::read(&path).unwrap();
+                    let filename = path
+                        .file_name()
+                        .expect("Something went wrong extracting file name")
+                        .to_str()
+                        .expect("Could not convert filename to string")
+                        .to_string();
+                    let blob = Blob {
+                        filename,
+                        content,
+                        hash: String::from_str(&hash).expect("oops"),
+                    };
+                    return Ok(blob);
+                }
+                Err("File Not Found")
+            }
+            Err(_) => Err("File Not Found"),
         }
-        Err("File Not Found")
     }
 
     fn get_dir(&self) -> PathBuf {
