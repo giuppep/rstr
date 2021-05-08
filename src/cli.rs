@@ -39,7 +39,7 @@ fn main() {
 
         println!("File's hash: {}", blob.hash);
 
-        let path = blob.save();
+        let path = blob.save().expect("Could not save file.")
         println!("File saved in {:?}", &path);
     }
 
@@ -51,15 +51,3 @@ fn main() {
         println!("Retrieved {}", blob.expect("Not found"));
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn test_hashing() {
-//         let f = std::fs::read("test/test_file.txt").unwrap();
-//         let h = hash_file(&f);
-//         assert_eq!(h, "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de")
-//     }
-// }
