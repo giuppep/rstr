@@ -3,6 +3,7 @@ use std::{fs, io, path::Path, path::PathBuf, str::FromStr};
 
 const DATA_LOC: &str = "/tmp/rustore/";
 
+#[derive(Debug)]
 pub struct Blob {
     pub filename: String,
     pub hash: String,
@@ -23,6 +24,15 @@ impl Blob {
             filename,
             content,
             hash,
+        }
+    }
+
+    pub fn from_content(content: Vec<u8>, filename: &str) -> Blob {
+        let hash = hash_content(&content);
+        Blob {
+            filename: String::from(filename),
+            hash,
+            content,
         }
     }
 
