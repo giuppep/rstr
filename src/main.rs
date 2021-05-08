@@ -1,4 +1,8 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    get, post,
+    web::{self, block},
+    App, HttpResponse, HttpServer, Responder,
+};
 mod blob;
 use actix_multipart::Multipart;
 use blob::Blob;
@@ -25,6 +29,7 @@ async fn get_blob(path: web::Path<(String,)>) -> impl Responder {
 
 #[post("/blobs")]
 async fn upload_blob(mut payload: Multipart) -> impl Responder {
+    let mut blobs: Vec<Blob> = Vec::new();
     while let Ok(Some(mut field)) = payload.try_next().await {
         let content_type = field.content_disposition().unwrap();
 
@@ -40,9 +45,15 @@ async fn upload_blob(mut payload: Multipart) -> impl Responder {
                 _ => (),
             }
         }
-        println!("{:?}", contents)
+        let blob = Blob::from_content(contents, &filename);
+        println!("{} has been created", blob);
+        blob.save()
+            .expect("something went wrong when saving the blob");
+        blobs.push(blob)
     }
-    HttpResponse::Ok()
+    let hashes: Vec<&str> = blobs.iter().map(|b| &b.hash[..]).collect();
+    println!("{:?}", hashes);
+    HttpResponse::Ok().body(hashes.join("\n"))
 }
 
 #[actix_web::main]
