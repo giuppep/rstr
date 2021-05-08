@@ -1,5 +1,5 @@
 use sha2::{Digest, Sha256};
-use std::{fs, path::Path, path::PathBuf, str::FromStr};
+use std::{fs, io, path::Path, path::PathBuf, str::FromStr};
 
 const DATA_LOC: &str = "/tmp/rustore/";
 
@@ -28,42 +28,37 @@ impl Blob {
 
     pub fn from_hash(hash: &str) -> Result<Blob, &'static str> {
         let dir = hash_to_path(hash);
-        let entries = fs::read_dir(dir);
+        let entries = fs::read_dir(dir).expect("Dir not found");
 
-        match entries {
-            Ok(entries) => {
-                for entry in entries {
-                    let path = entry.unwrap().path();
-                    let content = fs::read(&path).unwrap();
-                    let filename = path
-                        .file_name()
-                        .expect("Something went wrong extracting file name")
-                        .to_str()
-                        .expect("Could not convert filename to string")
-                        .to_string();
-                    let blob = Blob {
-                        filename,
-                        content,
-                        hash: String::from_str(&hash).expect("oops"),
-                    };
-                    return Ok(blob);
-                }
-                Err("File Not Found")
-            }
-            Err(_) => Err("File Not Found"),
+        for entry in entries {
+            let path = entry.unwrap().path();
+            let content = fs::read(&path).expect("Could not read file");
+            let filename = path
+                .file_name()
+                .expect("Something went wrong extracting file name")
+                .to_str()
+                .unwrap()
+                .to_string();
+            let blob = Blob {
+                filename,
+                content,
+                hash: String::from_str(&hash).unwrap(),
+            };
+            return Ok(blob);
         }
+        Err("File Not Found")
     }
 
     fn get_dir(&self) -> PathBuf {
         hash_to_path(&self.hash)
     }
 
-    pub fn save(&self) -> PathBuf {
+    pub fn save(&self) -> Result<PathBuf, io::Error> {
         let mut path = self.get_dir();
-        fs::create_dir_all(&path).expect("Cannot create dir");
+        fs::create_dir_all(&path)?;
         path = path.join(&self.filename);
-        fs::write(&path, &self.content).expect("Unable to write file");
-        path
+        fs::write(&path, &self.content)?;
+        Ok(path)
     }
 }
 
