@@ -2,6 +2,7 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 mod blob;
 use actix_multipart::Multipart;
 use blob::Blob;
+use blob::BlobHash;
 
 use futures::{StreamExt, TryStreamExt};
 
@@ -13,7 +14,8 @@ async fn hello() -> impl Responder {
 #[get("/blobs/{hash}")]
 async fn get_blob(path: web::Path<(String,)>) -> impl Responder {
     let hash = path.into_inner().0;
-    let blob = Blob::from_hash(&hash);
+    let blob_hash = BlobHash::new(&hash);
+    let blob = Blob::from_hash(blob_hash);
 
     match blob {
         Ok(blob) => HttpResponse::Ok().body(format!("Retrieved {}", blob)),
@@ -35,19 +37,19 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         let mut contents: Vec<u8> = Vec::new();
 
         while let Some(Ok(chunk)) = field.next().await {
-            // let content_disp = field.content_disposition().unwrap();
             match content_type.get_name().unwrap() {
                 "file" => contents.extend_from_slice(&chunk.to_vec()),
                 _ => (),
             }
         }
+
         let blob = Blob::from_content(contents, &filename);
         println!("{} has been created", blob);
         blob.save()
             .expect("something went wrong when saving the blob");
         blobs.push(blob)
     }
-    let hashes: Vec<&str> = blobs.iter().map(|b| &b.hash[..]).collect();
+    let hashes: Vec<&str> = blobs.iter().map(|b| b.get_hash()).collect();
     println!("{:?}", hashes);
     HttpResponse::Ok().body(hashes.join("\n"))
 }
