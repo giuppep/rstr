@@ -6,7 +6,7 @@ const DATA_LOC: &str = "/tmp/rustore/";
 #[derive(Debug)]
 pub struct Blob {
     pub filename: String,
-    content: Vec<u8>,
+    pub content: Vec<u8>,
     hash: BlobHash,
 }
 

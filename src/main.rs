@@ -12,13 +12,14 @@ async fn hello() -> impl Responder {
 }
 
 #[get("/blobs/{hash}")]
-async fn get_blob(path: web::Path<(String,)>) -> impl Responder {
-    let hash = path.into_inner().0;
+async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
     let blob_hash = BlobHash::new(&hash);
     let blob = Blob::from_hash(blob_hash);
 
     match blob {
-        Ok(blob) => HttpResponse::Ok().body(format!("Retrieved {}", blob)),
+        Ok(blob) => HttpResponse::Ok()
+            .content_type("application/octet-stream")
+            .body(blob.content),
         Err(_) => {
             HttpResponse::Ok().body(format!("Could not find blob corresponding to {}", &hash))
         }
