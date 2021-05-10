@@ -1,8 +1,4 @@
-use actix_web::{
-    get, post,
-    web::{self, block},
-    App, HttpResponse, HttpServer, Responder,
-};
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 mod blob;
 use actix_multipart::Multipart;
 use blob::Blob;
@@ -28,7 +24,7 @@ async fn get_blob(path: web::Path<(String,)>) -> impl Responder {
 }
 
 #[post("/blobs")]
-async fn upload_blob(mut payload: Multipart) -> impl Responder {
+async fn upload_blobs(mut payload: Multipart) -> impl Responder {
     let mut blobs: Vec<Blob> = Vec::new();
     while let Ok(Some(mut field)) = payload.try_next().await {
         let content_type = field.content_disposition().unwrap();
@@ -62,7 +58,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(hello)
             .service(get_blob)
-            .service(upload_blob)
+            .service(upload_blobs)
     })
     .bind("127.0.0.1:3123")?
     .run()

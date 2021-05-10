@@ -1,5 +1,5 @@
 use sha2::{Digest, Sha256};
-use std::{fs, io, path::Path, path::PathBuf, str::FromStr};
+use std::{fs, io, path::Path, path::PathBuf};
 
 const DATA_LOC: &str = "/tmp/rustore/";
 
@@ -36,27 +36,26 @@ impl Blob {
         }
     }
 
-    pub fn from_hash(hash: &str) -> Result<Blob, &'static str> {
+    pub fn from_hash(hash: &str) -> Result<Blob, io::Error> {
         let dir = hash_to_path(hash);
-        let entries = fs::read_dir(dir).expect("Dir not found");
+        let entries = fs::read_dir(dir)?;
 
         for entry in entries {
             let path = entry.unwrap().path();
-            let content = fs::read(&path).expect("Could not read file");
+            let content = fs::read(&path)?;
             let filename = path
                 .file_name()
                 .expect("Something went wrong extracting file name")
                 .to_str()
-                .unwrap()
-                .to_string();
+                .unwrap();
             let blob = Blob {
-                filename,
+                filename: String::from(filename),
+                hash: String::from(hash),
                 content,
-                hash: String::from_str(&hash).unwrap(),
             };
             return Ok(blob);
         }
-        Err("File Not Found")
+        Err(io::Error::new(io::ErrorKind::NotFound, "File not found"))
     }
 
     fn get_dir(&self) -> PathBuf {
@@ -98,10 +97,9 @@ mod tests {
 
     #[test]
     fn test_hashing() {
-        let f = std::fs::read("test/test_file.txt").unwrap();
-        let h = hash_content(&f);
+        let blob = Blob::from_path(Path::new("test/test_file.txt"));
         assert_eq!(
-            h,
+            blob.hash,
             "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de"
         )
     }
