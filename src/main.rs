@@ -1,8 +1,7 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 mod blob;
 use actix_multipart::Multipart;
-use blob::Blob;
-use blob::BlobHash;
+use blob::{Blob, BlobRef};
 
 use futures::{StreamExt, TryStreamExt};
 
@@ -13,7 +12,7 @@ async fn hello() -> impl Responder {
 
 #[get("/blobs/{hash}")]
 async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
-    let blob_hash = BlobHash::new(&hash);
+    let blob_hash = BlobRef::new(&hash);
     let blob = Blob::from_hash(blob_hash);
 
     match blob {
@@ -50,7 +49,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
             .expect("something went wrong when saving the blob");
         blobs.push(blob)
     }
-    let hashes: Vec<&str> = blobs.iter().map(|b| b.get_hash()).collect();
+    let hashes: Vec<&str> = blobs.iter().map(|b| b.get_ref()).collect();
     println!("{:?}", hashes);
     HttpResponse::Ok().body(hashes.join("\n"))
 }

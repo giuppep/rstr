@@ -7,18 +7,18 @@ const DATA_LOC: &str = "/tmp/rustore/";
 pub struct Blob {
     pub filename: String,
     pub content: Vec<u8>,
-    hash: BlobHash,
+    reference: BlobRef,
 }
 
 #[derive(Debug)]
-pub struct BlobHash {
+pub struct BlobRef {
     pub hash: String,
     algorithm: String, // TODO: make enum
 }
 
-impl BlobHash {
-    pub fn new(hash: &str) -> BlobHash {
-        BlobHash {
+impl BlobRef {
+    pub fn new(hash: &str) -> BlobRef {
+        BlobRef {
             hash: String::from(hash),
             algorithm: String::from("sha256"),
         }
@@ -34,9 +34,9 @@ impl BlobHash {
         path
     }
 
-    pub fn compute(content: &[u8]) -> BlobHash {
+    pub fn compute(content: &[u8]) -> BlobRef {
         let hash = format!("{:x}", Sha256::digest(content));
-        BlobHash {
+        BlobRef {
             hash,
             algorithm: String::from("sha256"),
         }
@@ -52,24 +52,24 @@ impl Blob {
             .expect("Could not convert filename to string")
             .to_string();
         let content = fs::read(path).unwrap();
-        let hash = BlobHash::compute(&content);
+        let hash = BlobRef::compute(&content);
         Blob {
             filename,
             content,
-            hash,
+            reference: hash,
         }
     }
 
     pub fn from_content(content: Vec<u8>, filename: &str) -> Blob {
-        let hash = BlobHash::compute(&content);
+        let hash = BlobRef::compute(&content);
         Blob {
             filename: String::from(filename),
-            hash,
+            reference: hash,
             content,
         }
     }
 
-    pub fn from_hash(hash: BlobHash) -> Result<Blob, io::Error> {
+    pub fn from_hash(hash: BlobRef) -> Result<Blob, io::Error> {
         let entries = fs::read_dir(hash.to_path())?;
 
         for entry in entries {
@@ -83,7 +83,7 @@ impl Blob {
             let blob = Blob {
                 filename: String::from(filename),
                 content,
-                hash,
+                reference: hash,
             };
             return Ok(blob);
         }
@@ -91,21 +91,21 @@ impl Blob {
     }
 
     pub fn save(&self) -> Result<PathBuf, io::Error> {
-        let mut path = self.hash.to_path();
+        let mut path = self.reference.to_path();
         fs::create_dir_all(&path)?;
         path = path.join(&self.filename);
         fs::write(&path, &self.content)?;
         Ok(path)
     }
 
-    pub fn get_hash(&self) -> &str {
-        &self.hash.hash[..]
+    pub fn get_ref(&self) -> &str {
+        &self.reference.hash[..]
     }
 }
 
 impl std::fmt::Display for Blob {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Blob({}, {})", self.filename, &self.get_hash()[..10])
+        write!(f, "Blob({}, {})", self.filename, &self.get_ref()[..10])
     }
 }
 
@@ -117,15 +117,14 @@ mod tests {
     fn test_hashing() {
         let blob = Blob::from_path(Path::new("test/test_file.txt"));
         assert_eq!(
-            blob.get_hash(),
+            blob.get_ref(),
             "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de"
         )
     }
 
     #[test]
     fn test_get_dir() {
-        let hash =
-            BlobHash::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
+        let hash = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
         let dir = hash.to_path();
         assert_eq!(
             dir.to_str().unwrap(),
