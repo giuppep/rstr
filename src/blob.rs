@@ -116,6 +116,12 @@ impl std::fmt::Display for Blob {
     }
 }
 
+impl std::fmt::Display for BlobRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "BlobRef({}:{})", &self.algorithm, &self.hash[..10])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

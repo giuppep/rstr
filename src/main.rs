@@ -2,6 +2,9 @@ use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 mod blob;
 use actix_multipart::Multipart;
 use blob::{Blob, BlobRef};
+use sha2::{Digest, Sha256};
+use std::io::Write;
+use tempfile::NamedTempFile;
 
 use futures::{StreamExt, TryStreamExt};
 
@@ -12,8 +15,8 @@ async fn hello() -> impl Responder {
 
 #[get("/blobs/{hash}")]
 async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
-    let blob_hash = BlobRef::new(&hash);
-    let blob = Blob::from_hash(blob_hash);
+    let blob_ref = BlobRef::new(&hash);
+    let blob = Blob::from_hash(blob_ref);
 
     match blob {
         Ok(blob) => HttpResponse::Ok()
@@ -27,29 +30,36 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
 
 #[post("/blobs")]
 async fn upload_blobs(mut payload: Multipart) -> impl Responder {
-    let mut blobs: Vec<Blob> = Vec::new();
+    // TODO: handle errors
+    let mut blobs: Vec<BlobRef> = Vec::new();
     while let Ok(Some(mut field)) = payload.try_next().await {
         let content_type = field.content_disposition().unwrap();
 
         let filename = content_type.get_filename().unwrap();
         let filename = sanitize_filename::sanitize(filename);
 
-        let mut contents: Vec<u8> = Vec::new();
+        let mut tmp_file = NamedTempFile::new_in("/tmp/rustore/.tmp/").unwrap();
+        let mut hasher = Sha256::new();
 
         while let Some(Ok(chunk)) = field.next().await {
             match content_type.get_name().unwrap() {
-                "file" => contents.extend_from_slice(&chunk.to_vec()),
+                "file" => {
+                    tmp_file.write_all(&chunk).unwrap();
+                    hasher.update(&chunk)
+                }
                 _ => (),
             }
         }
+        let blob_ref = BlobRef::new(&format!("{:x}", hasher.finalize())[..]);
+        println!("{} has been created", blob_ref);
 
-        let blob = Blob::from_content(contents, &filename);
-        println!("{} has been created", blob);
-        blob.save()
-            .expect("something went wrong when saving the blob");
-        blobs.push(blob)
+        std::fs::create_dir_all(&blob_ref.to_path()).unwrap();
+        tmp_file
+            .persist(blob_ref.to_path().join(&filename))
+            .unwrap();
+        blobs.push(blob_ref)
     }
-    let hashes: Vec<&str> = blobs.iter().map(|b| b.get_ref()).collect();
+    let hashes: Vec<&str> = blobs.iter().map(|b| &b.hash[..]).collect();
     HttpResponse::Ok().json(hashes)
 }
 
