@@ -17,7 +17,7 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
 
     match blob {
         Ok(blob) => HttpResponse::Ok()
-            .content_type("application/octet-stream")
+            .content_type(blob.get_mime())
             .body(blob.content),
         Err(_) => {
             HttpResponse::Ok().body(format!("Could not find blob corresponding to {}", &hash))
@@ -50,8 +50,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         blobs.push(blob)
     }
     let hashes: Vec<&str> = blobs.iter().map(|b| b.get_ref()).collect();
-    println!("{:?}", hashes);
-    HttpResponse::Ok().body(hashes.join("\n"))
+    HttpResponse::Ok().json(hashes)
 }
 
 #[actix_web::main]

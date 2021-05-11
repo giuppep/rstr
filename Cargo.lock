@@ -826,6 +826,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "infer"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f92b41dab759f9e8427c03f519c344a14655490b8db548dac1e57a75b3258391"
+
+[[package]]
 name = "instant"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1250,7 +1256,9 @@ dependencies = [
  "actix-web",
  "clap",
  "futures",
+ "infer",
  "sanitize-filename",
+ "serde",
  "sha2",
 ]
 

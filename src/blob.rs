@@ -101,6 +101,13 @@ impl Blob {
     pub fn get_ref(&self) -> &str {
         &self.reference.hash[..]
     }
+
+    pub fn get_mime(&self) -> &str {
+        match infer::get(&self.content) {
+            Some(mime) => mime.mime_type(),
+            None => "application/octet-stream",
+        }
+    }
 }
 
 impl std::fmt::Display for Blob {
