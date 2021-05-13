@@ -78,7 +78,7 @@ impl BlobRef {
         })
     }
 
-    fn compute(content: &[u8]) -> BlobRef {
+    pub fn compute(content: &[u8]) -> BlobRef {
         let hash = format!("{:x}", Sha256::digest(content));
         BlobRef::new(&hash)
     }

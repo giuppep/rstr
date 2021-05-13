@@ -1,93 +1,76 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use clap::{App, Arg, SubCommand};
+use std::fs;
+use std::path::Path;
 mod blob;
-use actix_multipart::Multipart;
+mod server;
 use blob::BlobRef;
-use sha2::{Digest, Sha256};
-use std::io::Write;
-use tempfile::NamedTempFile;
 
-use futures::{StreamExt, TryStreamExt};
+fn main() {
+    let clap_matches = App::new("rustore")
+        .version("0.1.0")
+        .author("Giuseppe Papallo <giuseppe@papallo.it>")
+        .about("Simmple content addressable blob store")
+        .subcommand(
+            SubCommand::with_name("add")
+                .about("Adds a new file to the blob store")
+                .arg(
+                    Arg::with_name("file")
+                        .required(true)
+                        .index(1)
+                        .help("Path to the file to add"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("get")
+                .about("Retrieves a file from the blob store")
+                .arg(
+                    Arg::with_name("hash")
+                        .required(true)
+                        .index(1)
+                        .help("The hash of the file to retrieve"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("start")
+                .about("Starts the blob store server")
+                .arg(
+                    Arg::with_name("port")
+                        .long("port")
+                        .required(false)
+                        .takes_value(true)
+                        .help("The port on which to run"),
+                ),
+        )
+        .get_matches();
 
-#[get("/")]
-async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
-}
+    if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
+        let input_path = Path::new(clap_matches.value_of("file").unwrap());
 
-#[get("/blobs/{hash}")]
-async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
-    let blob_ref = BlobRef::new(&hash);
-    if !blob_ref.exists() {
-        return HttpResponse::NotFound()
-            .body(format!("Could not find blob corresponding to {}", &hash));
+        let content = fs::read(input_path).expect("Could not read file");
+
+        let blob_ref = BlobRef::compute(&content);
+        println!("Blob reference: {}", &blob_ref);
+
+        let save_path = &blob_ref.to_path();
+        fs::create_dir_all(save_path).expect("Could not create save directory");
+        fs::copy(input_path, save_path).expect("Could not save file.");
+
+        // println!("File saved in {:?}", save_path);
     }
 
-    let mimetype = blob_ref.get_mime().unwrap();
-    // TODO: change to stream?
-    match blob_ref.get_content() {
-        Ok(content) => HttpResponse::Ok().content_type(mimetype).body(content),
-        Err(_) => HttpResponse::InternalServerError().body("Cannot open file"),
-    }
-}
+    if let Some(clap_matches) = clap_matches.subcommand_matches("get") {
+        let hash = clap_matches.value_of("hash").unwrap();
 
-#[get("/blobs/{hash}/metadata")]
-async fn get_blob_metadata(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
-    let blob_ref = BlobRef::new(&hash);
-    if !blob_ref.exists() {
-        return HttpResponse::NotFound()
-            .body(format!("Could not find blob corresponding to {}", &hash));
-    }
-
-    let metadata = blob_ref.get_metadata();
-    match metadata {
-        Ok(metadata) => HttpResponse::Ok().json(metadata),
-        Err(_) => HttpResponse::InternalServerError().body("Cannot retrieve metadata"),
-    }
-}
-
-#[post("/blobs")]
-async fn upload_blobs(mut payload: Multipart) -> impl Responder {
-    // TODO: handle errors
-    let mut blobs: Vec<BlobRef> = Vec::new();
-    while let Ok(Some(mut field)) = payload.try_next().await {
-        let content_type = field.content_disposition().unwrap();
-
-        let filename = content_type.get_filename().unwrap_or("file");
-        let filename = sanitize_filename::sanitize(filename);
-
-        let mut tmp_file = NamedTempFile::new_in("/tmp/rustore/.tmp/").unwrap();
-        let mut hasher = Sha256::new();
-        while let Some(Ok(chunk)) = field.next().await {
-            match content_type.get_name().unwrap() {
-                "file" => {
-                    tmp_file.write_all(&chunk).unwrap();
-                    hasher.update(&chunk)
-                }
-                _ => (),
-            }
+        let blob_ref = BlobRef::new(&hash);
+        if blob_ref.exists() {
+            println!("Retrieved {}", blob_ref)
+        } else {
+            println!("No blob corresponding to {}", blob_ref)
         }
-        let blob_ref = BlobRef::new(&format!("{:x}", hasher.finalize())[..]);
-        println!("{} has been created", blob_ref);
-
-        std::fs::create_dir_all(&blob_ref.to_path()).unwrap();
-        tmp_file
-            .persist(blob_ref.to_path().join(&filename))
-            .unwrap();
-        blobs.push(blob_ref)
     }
-    let hashes: Vec<&str> = blobs.iter().map(|b| &b.hash[..]).collect();
-    HttpResponse::Ok().json(hashes)
-}
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
-        App::new()
-            .service(hello)
-            .service(get_blob)
-            .service(get_blob_metadata)
-            .service(upload_blobs)
-    })
-    .bind("127.0.0.1:3123")?
-    .run()
-    .await
+    if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
+        let port = clap_matches.value_of("port").unwrap_or("3123");
+        server::start_server(String::from(port)).unwrap()
+    }
 }
