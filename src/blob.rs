@@ -34,6 +34,39 @@ impl BlobRef {
         path
     }
 
+    pub fn exists(&self) -> bool {
+        let dir = self.to_path();
+        if dir.exists() {
+            return !dir.read_dir().unwrap().next().is_none();
+        }
+        false
+    }
+
+    fn get_file_path(&self) -> Result<PathBuf, &'static str> {
+        // Get the full path to the file, including the filename
+        match self.to_path().read_dir() {
+            Ok(entries) => {
+                for entry in entries {
+                    return Ok(entry.unwrap().path());
+                }
+                return Err("Directory is empty");
+            }
+            Err(_) => Err("Directory not found"),
+        }
+    }
+    pub fn get_mime(&self) -> Result<&str, &'static str> {
+        match infer::get_from_path(self.get_file_path()?).expect("could not read file") {
+            Some(mime) => return Ok(mime.mime_type()),
+            _ => return Ok("application/octet-stream"),
+        }
+    }
+    pub fn get_content(&self) -> Result<Vec<u8>, &'static str> {
+        match fs::read(&self.get_file_path()?) {
+            Ok(f) => Ok(f),
+            Err(_) => Err("Cannot open the file"),
+        }
+    }
+
     pub fn compute(content: &[u8]) -> BlobRef {
         let hash = format!("{:x}", Sha256::digest(content));
         BlobRef {

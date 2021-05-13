@@ -1,7 +1,7 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 mod blob;
 use actix_multipart::Multipart;
-use blob::{Blob, BlobRef};
+use blob::BlobRef;
 use sha2::{Digest, Sha256};
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -16,15 +16,16 @@ async fn hello() -> impl Responder {
 #[get("/blobs/{hash}")]
 async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
     let blob_ref = BlobRef::new(&hash);
-    let blob = Blob::from_hash(blob_ref);
+    if !blob_ref.exists() {
+        return HttpResponse::NotFound()
+            .body(format!("Could not find blob corresponding to {}", &hash));
+    }
 
-    match blob {
-        Ok(blob) => HttpResponse::Ok()
-            .content_type(blob.get_mime())
-            .body(blob.content),
-        Err(_) => {
-            HttpResponse::Ok().body(format!("Could not find blob corresponding to {}", &hash))
-        }
+    let mimetype = blob_ref.get_mime().unwrap();
+    // TODO: change to stream?
+    match blob_ref.get_content() {
+        Ok(content) => HttpResponse::Ok().content_type(mimetype).body(content),
+        Err(_) => HttpResponse::InternalServerError().body("Cannot open file"),
     }
 }
 
@@ -35,12 +36,11 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
     while let Ok(Some(mut field)) = payload.try_next().await {
         let content_type = field.content_disposition().unwrap();
 
-        let filename = content_type.get_filename().unwrap();
+        let filename = content_type.get_filename().unwrap_or("file");
         let filename = sanitize_filename::sanitize(filename);
 
         let mut tmp_file = NamedTempFile::new_in("/tmp/rustore/.tmp/").unwrap();
         let mut hasher = Sha256::new();
-
         while let Some(Ok(chunk)) = field.next().await {
             match content_type.get_name().unwrap() {
                 "file" => {
