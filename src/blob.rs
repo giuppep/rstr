@@ -1,3 +1,4 @@
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::{fs, path::Path, path::PathBuf};
 
@@ -7,6 +8,12 @@ const DATA_LOC: &str = "/tmp/rustore/";
 pub struct BlobRef {
     pub hash: String,
     algorithm: String, // TODO: make enum
+}
+
+#[derive(Debug, Serialize)]
+pub struct BlobMetadata {
+    filename: String,
+    mime_type: String,
 }
 
 impl BlobRef {
@@ -58,6 +65,17 @@ impl BlobRef {
             Ok(f) => Ok(f),
             Err(_) => Err("Cannot open the file"),
         }
+    }
+
+    pub fn get_metadata(&self) -> Result<BlobMetadata, &'static str> {
+        if !self.exists() {
+            return Err("File not found");
+        }
+
+        Ok(BlobMetadata {
+            mime_type: String::from(self.get_mime()?),
+            filename: String::from("test"),
+        })
     }
 
     fn compute(content: &[u8]) -> BlobRef {
