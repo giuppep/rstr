@@ -1,7 +1,7 @@
 use clap::{App, Arg, SubCommand};
 use std::path::Path;
 mod blob;
-use blob::Blob;
+use blob::{Blob, BlobRef};
 
 fn main() {
     let clap_matches = App::new("rustore")
@@ -32,22 +32,27 @@ fn main() {
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
         let input_path = Path::new(clap_matches.value_of("file").unwrap());
-        println!("{:?}", input_path);
 
-        let blob = Blob::from_path(&input_path);
-        println!("{}", blob);
+        let content = fs::read(input_path).expect("Could not read file");
 
-        println!("File's hash: {}", blob.hash);
+        let blob_ref = BlobRef::compute(content);
+        println!("Blob reference: {}", &blob_ref);
 
-        let path = blob.save().expect("Could not save file.")
-        println!("File saved in {:?}", &path);
+        let save_path = &blob_ref.to_path();
+        fs::create_dir_all(save_path).expect("Could not create save directory");
+        fs::copy(input_path, save_path).expect("Could not save file.")
+
+        println!("File saved in {:?}", save_path);
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("get") {
         let hash = clap_matches.value_of("hash").unwrap();
 
-        let blob = Blob::from_hash(&hash);
-
-        println!("Retrieved {}", blob.expect("Not found"));
+        let blob_ref = BlobRef::new(&hash);
+        if blob_ref.exists() {
+            println!("Retrieved {}", blob_ref)
+        } else {
+            println!("No blob corresponding to {}", blob_ref)
+        }
     }
 }
