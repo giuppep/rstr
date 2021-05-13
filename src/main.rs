@@ -29,6 +29,21 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
     }
 }
 
+#[get("/blobs/{hash}/metadata")]
+async fn get_blob_metadata(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
+    let blob_ref = BlobRef::new(&hash);
+    if !blob_ref.exists() {
+        return HttpResponse::NotFound()
+            .body(format!("Could not find blob corresponding to {}", &hash));
+    }
+
+    let metadata = blob_ref.get_metadata();
+    match metadata {
+        Ok(metadata) => HttpResponse::Ok().json(metadata),
+        Err(_) => HttpResponse::InternalServerError().body("Cannot retrieve metadata"),
+    }
+}
+
 #[post("/blobs")]
 async fn upload_blobs(mut payload: Multipart) -> impl Responder {
     // TODO: handle errors
@@ -69,6 +84,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(hello)
             .service(get_blob)
+            .service(get_blob_metadata)
             .service(upload_blobs)
     })
     .bind("127.0.0.1:3123")?
