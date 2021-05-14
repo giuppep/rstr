@@ -1,8 +1,8 @@
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use std::{fs, path::Path, path::PathBuf};
+use std::{env, fs, path::Path, path::PathBuf};
 
-const DATA_LOC: &str = "/tmp/rustore/";
+const RUSTORE_DATA_PATH: &str = "/tmp/rustore/";
 
 #[derive(Debug)]
 pub struct BlobRef {
@@ -25,7 +25,8 @@ impl BlobRef {
     }
 
     pub fn to_path(&self) -> PathBuf {
-        let path = Path::new(DATA_LOC)
+        let base_path = env::var("RUSTORE_DATA_PATH").unwrap_or(String::from(RUSTORE_DATA_PATH));
+        let path = Path::new(&base_path)
             .join(&self.hash[0..2])
             .join(&self.hash[2..4])
             .join(&self.hash[4..6])
