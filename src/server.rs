@@ -1,6 +1,7 @@
-use super::blob::BlobRef;
+use crate::blob;
 use actix_multipart::Multipart;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use blob::BlobRef;
 use sha2::{Digest, Sha256};
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -53,13 +54,18 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         let filename = content_type.get_filename().unwrap_or("file");
         let filename = sanitize_filename::sanitize(filename);
 
-        let mut tmp_file = NamedTempFile::new_in("/tmp/rustore/.tmp/").unwrap();
+        let mut tmp_file = web::block(|| NamedTempFile::new_in("/tmp/rustore/.tmp/"))
+            .await
+            .unwrap();
+
         let mut hasher = Sha256::new();
         while let Some(Ok(chunk)) = field.next().await {
             match content_type.get_name().unwrap() {
                 "file" => {
-                    tmp_file.write_all(&chunk).unwrap();
-                    hasher.update(&chunk)
+                    hasher.update(&chunk);
+                    tmp_file = web::block(move || tmp_file.write_all(&chunk).map(|_| tmp_file))
+                        .await
+                        .unwrap();
                 }
                 _ => (),
             }
@@ -67,10 +73,14 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         let blob_ref = BlobRef::new(&format!("{:x}", hasher.finalize())[..]);
         println!("{} has been created", blob_ref);
 
-        std::fs::create_dir_all(&blob_ref.to_path()).unwrap();
-        tmp_file
-            .persist(blob_ref.to_path().join(&filename))
-            .unwrap();
+        let save_path = blob_ref.to_path();
+        web::block(move || {
+            std::fs::create_dir_all(&save_path).unwrap();
+            tmp_file.persist(&save_path.join(&filename))
+        })
+        .await
+        .unwrap();
+
         blobs.push(blob_ref)
     }
     let hashes: Vec<&str> = blobs.iter().map(|b| &b.hash[..]).collect();
