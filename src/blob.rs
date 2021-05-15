@@ -4,7 +4,7 @@ use std::{env, fs, path::Path, path::PathBuf};
 
 const RUSTORE_DATA_PATH: &str = "/tmp/rustore/";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlobRef {
     pub hash: String,
     algorithm: String, // TODO: make enum

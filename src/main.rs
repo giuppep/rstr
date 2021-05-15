@@ -5,6 +5,10 @@ mod blob;
 mod server;
 use blob::BlobRef;
 use ignore::{WalkBuilder, WalkState};
+use std::fs::File;
+use std::io::prelude::*;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 fn add_file(path: &Path) -> BlobRef {
     assert!(path.is_file());
@@ -13,30 +17,63 @@ fn add_file(path: &Path) -> BlobRef {
 
     let blob_ref = BlobRef::compute(&content);
 
-    let filename = path.file_name().unwrap();
+    if !blob_ref.exists() {
+        let filename = path.file_name().unwrap();
 
-    let save_path = &blob_ref.to_path();
-    fs::create_dir_all(save_path).expect("Could not create save directory");
-    fs::copy(path, save_path.join(&filename)).expect("Could not save file.");
+        let save_path = &blob_ref.to_path();
+        fs::create_dir_all(save_path).expect("Could not create save directory");
+
+        // fs::copy(path, save_path.join(&filename)).expect("Could not save file.");
+        let mut file = File::create(&save_path.join(&filename)).unwrap();
+        file.write_all(&content).unwrap();
+    }
+
     blob_ref
 }
 
-fn add_folder(path: &Path) {
+fn add_folder(path: &Path, parallel: bool) -> Vec<BlobRef> {
     assert!(path.is_dir());
+    println!("Parallel {}", &parallel);
 
     let walker = WalkBuilder::new(path);
-    walker.build_parallel().run(|| {
-        Box::new(move |entry| match entry {
-            Ok(entry) => {
-                let path = entry.path();
-                if path.is_file() {
-                    add_file(path);
+    let blob_refs = match parallel {
+        true => {
+            let blob_refs: Arc<Mutex<Vec<BlobRef>>> = Arc::new(Mutex::new(vec![]));
+            walker.build_parallel().run(|| {
+                let blob_refs = blob_refs.clone();
+                Box::new(move |entry| match entry {
+                    Ok(entry) => {
+                        let path = entry.path();
+                        if path.is_file() {
+                            blob_refs.lock().unwrap().push(add_file(path));
+                        }
+                        WalkState::Continue
+                    }
+                    Err(_) => WalkState::Continue,
+                })
+            });
+            let blob_refs = blob_refs.lock().unwrap();
+            blob_refs.to_vec()
+        }
+        false => {
+            let mut blob_refs: Vec<BlobRef> = vec![];
+            for entry in walker.build() {
+                match entry {
+                    Ok(entry) => {
+                        let path = entry.path();
+                        if path.is_file() {
+                            blob_refs.push(add_file(path));
+                        }
+                    }
+                    Err(_) => (),
                 }
-                WalkState::Continue
             }
-            Err(_) => WalkState::Continue,
-        })
-    });
+            blob_refs
+        }
+    };
+
+    println!("Imported {} files", blob_refs.len());
+    blob_refs
 }
 
 fn main() {
@@ -62,6 +99,12 @@ fn main() {
                         .required(true)
                         .index(1)
                         .help("Path to the file to add"),
+                )
+                .arg(
+                    Arg::with_name("parallel")
+                        .long("parallel")
+                        .required(false)
+                        .help("Whether to run in parallel"),
                 ),
         )
         .subcommand(
@@ -112,8 +155,11 @@ fn main() {
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("import") {
         let input_path = Path::new(clap_matches.value_of("dir").unwrap());
+        let parallel = clap_matches.is_present("parallel");
 
-        let blob_refs = add_folder(input_path);
-        println!("{:?}", blob_refs)
+        let blob_refs = add_folder(input_path, parallel);
+        for blob_ref in &blob_refs[..10] {
+            println!("Blob reference {:?}", blob_ref)
+        }
     }
 }
