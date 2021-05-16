@@ -1,4 +1,5 @@
 use clap::{App, Arg, SubCommand};
+
 use std::fs;
 use std::path::Path;
 mod blob;
@@ -6,9 +7,8 @@ mod server;
 use blob::BlobRef;
 use ignore::{WalkBuilder, WalkState};
 use std::fs::File;
-use std::io::prelude::*;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::io::Write;
+use std::sync::mpsc;
 
 fn add_file(path: &Path) -> BlobRef {
     assert!(path.is_file());
@@ -38,22 +38,29 @@ fn add_folder(path: &Path, parallel: bool) -> Vec<BlobRef> {
     let walker = WalkBuilder::new(path);
     let blob_refs = match parallel {
         true => {
-            let blob_refs: Arc<Mutex<Vec<BlobRef>>> = Arc::new(Mutex::new(vec![]));
+            let (tx, rx) = mpsc::channel();
+
             walker.build_parallel().run(|| {
-                let blob_refs = blob_refs.clone();
+                let tx = tx.clone();
                 Box::new(move |entry| match entry {
                     Ok(entry) => {
                         let path = entry.path();
                         if path.is_file() {
-                            blob_refs.lock().unwrap().push(add_file(path));
+                            let blob_ref = add_file(path);
+                            tx.send(blob_ref).expect("Err");
                         }
                         WalkState::Continue
                     }
                     Err(_) => WalkState::Continue,
                 })
             });
-            let blob_refs = blob_refs.lock().unwrap();
-            blob_refs.to_vec()
+
+            drop(tx);
+            let mut blob_refs: Vec<BlobRef> = vec![];
+            for blob_ref in rx.iter() {
+                blob_refs.push(blob_ref);
+            }
+            blob_refs
         }
         false => {
             let mut blob_refs: Vec<BlobRef> = vec![];
@@ -158,7 +165,7 @@ fn main() {
         let parallel = clap_matches.is_present("parallel");
 
         let blob_refs = add_folder(input_path, parallel);
-        for blob_ref in &blob_refs[..10] {
+        for blob_ref in &blob_refs[..1] {
             println!("Blob reference {:?}", blob_ref)
         }
     }
