@@ -13,70 +13,65 @@ use std::sync::mpsc;
 fn add_file(path: &Path) -> BlobRef {
     assert!(path.is_file());
 
-    let content = fs::read(path).expect("Could not read file");
-
-    let blob_ref = BlobRef::compute(&content);
-
+    let blob_ref = BlobRef::from_path(&path).unwrap();
     if !blob_ref.exists() {
-        let filename = path.file_name().unwrap();
-
         let save_path = &blob_ref.to_path();
         fs::create_dir_all(save_path).expect("Could not create save directory");
-
-        // fs::copy(path, save_path.join(&filename)).expect("Could not save file.");
-        let mut file = File::create(&save_path.join(&filename)).unwrap();
-        file.write_all(&content).unwrap();
+        let filename = path.file_name().unwrap();
+        fs::copy(path, save_path.join(&filename)).expect("Could not copy");
     }
-
     blob_ref
 }
 
+fn add_folder_multi_threaded(path: &Path) -> Vec<BlobRef> {
+    let walker = WalkBuilder::new(path);
+    let (tx, rx) = mpsc::channel();
+    walker.build_parallel().run(|| {
+        let tx = tx.clone();
+        Box::new(move |entry| match entry {
+            Ok(entry) => {
+                let path = entry.path();
+                if path.is_file() {
+                    let blob_ref = add_file(path);
+                    tx.send(blob_ref).expect("Err");
+                }
+                WalkState::Continue
+            }
+            Err(_) => WalkState::Continue,
+        })
+    });
+
+    drop(tx);
+    let mut blob_refs: Vec<BlobRef> = vec![];
+    for blob_ref in rx.iter() {
+        blob_refs.push(blob_ref);
+    }
+    blob_refs
+}
+
+fn add_folder_single_threaded(path: &Path) -> Vec<BlobRef> {
+    let walker = WalkBuilder::new(path);
+    let mut blob_refs: Vec<BlobRef> = vec![];
+    for entry in walker.build() {
+        match entry {
+            Ok(entry) => {
+                let path = entry.path();
+                if path.is_file() {
+                    blob_refs.push(add_file(path));
+                }
+            }
+            Err(_) => (),
+        }
+    }
+    blob_refs
+}
 fn add_folder(path: &Path, parallel: bool) -> Vec<BlobRef> {
     assert!(path.is_dir());
     println!("Parallel {}", &parallel);
 
-    let walker = WalkBuilder::new(path);
     let blob_refs = match parallel {
-        true => {
-            let (tx, rx) = mpsc::channel();
-
-            walker.build_parallel().run(|| {
-                let tx = tx.clone();
-                Box::new(move |entry| match entry {
-                    Ok(entry) => {
-                        let path = entry.path();
-                        if path.is_file() {
-                            let blob_ref = add_file(path);
-                            tx.send(blob_ref).expect("Err");
-                        }
-                        WalkState::Continue
-                    }
-                    Err(_) => WalkState::Continue,
-                })
-            });
-
-            drop(tx);
-            let mut blob_refs: Vec<BlobRef> = vec![];
-            for blob_ref in rx.iter() {
-                blob_refs.push(blob_ref);
-            }
-            blob_refs
-        }
-        false => {
-            let mut blob_refs: Vec<BlobRef> = vec![];
-            for entry in walker.build() {
-                match entry {
-                    Ok(entry) => {
-                        let path = entry.path();
-                        if path.is_file() {
-                            blob_refs.push(add_file(path));
-                        }
-                    }
-                    Err(_) => (),
-                }
-            }
-            blob_refs
-        }
+        true => add_folder_multi_threaded(path),
+        false => add_folder_single_threaded(path),
     };
 
     println!("Imported {} files", blob_refs.len());

@@ -1,6 +1,13 @@
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use std::{env, fs, path::Path, path::PathBuf};
+use std::{
+    env,
+    fs::{self, File},
+    io::BufReader,
+    io::Read,
+    path::Path,
+    path::PathBuf,
+};
 
 const RUSTORE_DATA_PATH: &str = "/tmp/rustore/";
 
@@ -79,9 +86,19 @@ impl BlobRef {
         })
     }
 
-    pub fn compute(content: &[u8]) -> BlobRef {
-        let hash = format!("{:x}", Sha256::digest(content));
-        BlobRef::new(&hash)
+    pub fn from_path(path: &Path) -> Result<BlobRef, std::io::Error> {
+        let mut buf_reader = BufReader::new(File::open(path)?);
+        let mut buffer = [0; 1024];
+        let mut hasher = Sha256::new();
+        loop {
+            let count = buf_reader.read(&mut buffer)?;
+            if count == 0 {
+                break;
+            }
+            hasher.update(&buffer[..count]);
+        }
+
+        Ok(BlobRef::new(&format!("{:x}", hasher.finalize())))
     }
 }
 
@@ -97,8 +114,8 @@ mod tests {
 
     #[test]
     fn test_hashing() {
-        let file = fs::read("test/test_file.txt").unwrap();
-        let blob_ref = BlobRef::compute(&file);
+        let path = Path::new("test/test_file.txt");
+        let blob_ref = BlobRef::from_path(&path).unwrap();
         assert_eq!(
             blob_ref.hash,
             "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de"
