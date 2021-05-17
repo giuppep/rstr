@@ -3,8 +3,7 @@ use sha2::{Digest, Sha256};
 use std::{
     env,
     fs::{self, File},
-    io::BufReader,
-    io::Read,
+    io,
     path::Path,
     path::PathBuf,
 };
@@ -87,17 +86,10 @@ impl BlobRef {
     }
 
     pub fn from_path(path: &Path) -> Result<BlobRef, std::io::Error> {
-        let mut buf_reader = BufReader::new(File::open(path)?);
-        let mut buffer = [0; 1024];
+        let mut file = File::open(path)?;
         let mut hasher = Sha256::new();
-        loop {
-            let count = buf_reader.read(&mut buffer)?;
-            if count == 0 {
-                break;
-            }
-            hasher.update(&buffer[..count]);
-        }
 
+        io::copy(&mut file, &mut hasher)?;
         Ok(BlobRef::new(&format!("{:x}", hasher.finalize())))
     }
 }
