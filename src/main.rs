@@ -6,7 +6,7 @@ mod blob;
 mod server;
 use blob::BlobRef;
 use ignore::{WalkBuilder, WalkState};
-use std::fs::File;
+use std::collections::HashMap;
 use std::io::Write;
 use std::sync::mpsc;
 
@@ -23,7 +23,7 @@ fn add_file(path: &Path) -> BlobRef {
     blob_ref
 }
 
-fn add_folder_multi_threaded(path: &Path) -> Vec<BlobRef> {
+fn add_folder_multi_threaded(path: &Path) -> HashMap<String, String> {
     let walker = WalkBuilder::new(path);
     let (tx, rx) = mpsc::channel();
     walker.build_parallel().run(|| {
@@ -33,7 +33,8 @@ fn add_folder_multi_threaded(path: &Path) -> Vec<BlobRef> {
                 let path = entry.path();
                 if path.is_file() {
                     let blob_ref = add_file(path);
-                    tx.send(blob_ref).expect("Err");
+                    tx.send((String::from(path.to_str().unwrap()), blob_ref))
+                        .expect("Err");
                 }
                 WalkState::Continue
             }
@@ -42,30 +43,31 @@ fn add_folder_multi_threaded(path: &Path) -> Vec<BlobRef> {
     });
 
     drop(tx);
-    let mut blob_refs: Vec<BlobRef> = vec![];
-    for blob_ref in rx.iter() {
-        blob_refs.push(blob_ref);
+    let mut output = HashMap::new();
+    for (path, blob_ref) in rx.iter() {
+        output.insert(path, blob_ref.hash);
     }
-    blob_refs
+    output
 }
 
-fn add_folder_single_threaded(path: &Path) -> Vec<BlobRef> {
+fn add_folder_single_threaded(path: &Path) -> HashMap<String, String> {
     let walker = WalkBuilder::new(path);
-    let mut blob_refs: Vec<BlobRef> = vec![];
+    let mut output = HashMap::new();
     for entry in walker.build() {
         match entry {
             Ok(entry) => {
                 let path = entry.path();
                 if path.is_file() {
-                    blob_refs.push(add_file(path));
+                    let blob_ref = add_file(path);
+                    output.insert(String::from(path.to_str().unwrap()), blob_ref.hash);
                 }
             }
             Err(_) => (),
         }
     }
-    blob_refs
+    output
 }
-fn add_folder(path: &Path, parallel: bool) -> Vec<BlobRef> {
+fn add_folder(path: &Path, parallel: bool) -> HashMap<String, String> {
     assert!(path.is_dir());
     println!("Parallel {}", &parallel);
 
@@ -101,6 +103,13 @@ fn main() {
                         .required(true)
                         .index(1)
                         .help("Path to the file to add"),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .long("output")
+                        .short("o")
+                        .takes_value(true)
+                        .required(false),
                 )
                 .arg(
                     Arg::with_name("parallel")
@@ -159,9 +168,14 @@ fn main() {
         let input_path = Path::new(clap_matches.value_of("dir").unwrap());
         let parallel = clap_matches.is_present("parallel");
 
-        let blob_refs = add_folder(input_path, parallel);
-        for blob_ref in &blob_refs[..1] {
-            println!("Blob reference {:?}", blob_ref)
-        }
+        let output = add_folder(input_path, parallel);
+
+        let output_path = clap_matches
+            .value_of("output")
+            .unwrap_or("/tmp/rustore/output.json");
+
+        let mut file = fs::File::create(&output_path).unwrap();
+        write!(file, "{}", serde_json::to_string(&output).unwrap()).unwrap();
+        println!("Saved lookup in {}", &output_path)
     }
 }
