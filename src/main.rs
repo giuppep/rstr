@@ -69,7 +69,6 @@ fn add_folder_single_threaded(path: &Path) -> HashMap<String, String> {
 }
 fn add_folder(path: &Path, parallel: bool) -> HashMap<String, String> {
     assert!(path.is_dir());
-    println!("Parallel {}", &parallel);
 
     let blob_refs = match parallel {
         true => add_folder_multi_threaded(path),
@@ -92,6 +91,7 @@ fn main() {
                     Arg::with_name("file")
                         .required(true)
                         .index(1)
+                        .value_name("FILE")
                         .help("Path to the file to add"),
                 ),
         )
@@ -102,14 +102,18 @@ fn main() {
                     Arg::with_name("dir")
                         .required(true)
                         .index(1)
-                        .help("Path to the file to add"),
+                        .value_name("DIRECTORY")
+                        .help("Path to the directory to add"),
                 )
                 .arg(
                     Arg::with_name("output")
                         .long("output")
                         .short("o")
                         .takes_value(true)
-                        .required(false),
+                        .value_name("FILE")
+                        .default_value("/tmp/rustore/output.json")
+                        .required(false)
+                        .help("Where to save the output of the import."),
                 )
                 .arg(
                     Arg::with_name("parallel")
@@ -125,6 +129,7 @@ fn main() {
                     Arg::with_name("hash")
                         .required(true)
                         .index(1)
+                        .value_name("HASH")
                         .help("The hash of the file to retrieve"),
                 ),
         )
@@ -136,6 +141,8 @@ fn main() {
                         .long("port")
                         .required(false)
                         .takes_value(true)
+                        .value_name("PORT")
+                        .default_value("3123")
                         .help("The port on which to run"),
                 ),
         )
@@ -160,7 +167,7 @@ fn main() {
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
-        let port = clap_matches.value_of("port").unwrap_or("3123");
+        let port = clap_matches.value_of("port").unwrap();
         server::start_server(String::from(port)).unwrap()
     }
 
@@ -170,9 +177,7 @@ fn main() {
 
         let output = add_folder(input_path, parallel);
 
-        let output_path = clap_matches
-            .value_of("output")
-            .unwrap_or("/tmp/rustore/output.json");
+        let output_path = clap_matches.value_of("output").unwrap();
 
         let mut file = fs::File::create(&output_path).unwrap();
         write!(file, "{}", serde_json::to_string(&output).unwrap()).unwrap();
