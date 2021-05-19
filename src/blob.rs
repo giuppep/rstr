@@ -79,9 +79,17 @@ impl BlobRef {
             return Err("File not found");
         }
 
+        let filename = self
+            .get_file_path()?
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+
         Ok(BlobMetadata {
             mime_type: String::from(self.get_mime()?),
-            filename: String::from("test"),
+            filename,
         })
     }
 
