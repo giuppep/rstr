@@ -5,7 +5,7 @@ pub fn app() -> App<'static, 'static> {
         .version("0.1.0")
         .author("Giuseppe Papallo <giuseppe@papallo.it>")
         .about("Simmple content addressable blob store")
-        .global_setting(AppSettings::SubcommandRequiredElseHelp)
+        .global_setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("add")
                 .about("Adds a new file to the blob store")
