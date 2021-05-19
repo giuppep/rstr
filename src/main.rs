@@ -131,6 +131,12 @@ fn main() {
                         .index(1)
                         .value_name("HASH")
                         .help("The hash of the file to retrieve"),
+                )
+                .arg(
+                    Arg::with_name("metadata")
+                        .long("metadata")
+                        .required(false)
+                        .help("Return just the metadata"),
                 ),
         )
         .subcommand(
@@ -152,7 +158,7 @@ fn main() {
         let input_path = Path::new(clap_matches.value_of("file").unwrap());
 
         let blob_ref = add_file(input_path);
-        println!("Blob reference {}", blob_ref)
+        println!("Blob reference {}", blob_ref.hash)
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("get") {
@@ -160,7 +166,10 @@ fn main() {
 
         let blob_ref = BlobRef::new(&hash);
         if blob_ref.exists() {
-            println!("Retrieved {}", blob_ref)
+            println!("Retrieved {}", blob_ref);
+            if clap_matches.is_present("metadata") {
+                println!("{:?}", blob_ref.get_metadata().unwrap());
+            }
         } else {
             println!("No blob corresponding to {}", blob_ref)
         }
