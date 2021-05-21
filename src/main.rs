@@ -12,29 +12,31 @@ fn main() {
     let clap_matches = app().get_matches();
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
-        let input_path = Path::new(clap_matches.value_of("file").unwrap());
-
-        let blob_ref = blob_store::add_file(input_path);
-        println!("Blob reference {}", blob_ref.hash)
+        clap_matches
+            .values_of("files")
+            .unwrap()
+            .for_each(|input_path| {
+                let input_path = Path::new(input_path);
+                let blob_ref = blob_store::add_file(input_path);
+                println!("{}\t\t\t\t{}", input_path.to_str().unwrap(), blob_ref.hash)
+            })
     }
 
-    if let Some(clap_matches) = clap_matches.subcommand_matches("get") {
-        let hash = clap_matches.value_of("hash").unwrap();
+    if let Some(clap_matches) = clap_matches.subcommand_matches("check") {
+        let show_metadata = clap_matches.is_present("metadata");
 
-        let blob_ref = BlobRef::new(&hash);
-        if blob_ref.exists() {
-            println!("Retrieved {}", blob_ref);
-            if clap_matches.is_present("metadata") {
-                println!("{:?}", blob_ref.get_metadata().unwrap());
+        clap_matches.values_of("refs").unwrap().for_each(|hash| {
+            let blob_ref = BlobRef::new(&hash);
+            match blob_ref.exists() {
+                true if show_metadata => println!(
+                    "{}\t\tPRESENT\t\t{:?}",
+                    blob_ref,
+                    blob_ref.get_metadata().unwrap()
+                ),
+                true => println!("{}\t\tPRESENT", blob_ref),
+                false => println!("{}\t\tMISSING", blob_ref),
             }
-        } else {
-            println!("No blob corresponding to {}", blob_ref)
-        }
-    }
-
-    if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
-        let port = clap_matches.value_of("port").unwrap();
-        server::start_server(String::from(port)).unwrap()
+        })
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("import") {
@@ -48,5 +50,10 @@ fn main() {
         let mut file = fs::File::create(&output_path).unwrap();
         write!(file, "{}", serde_json::to_string(&output).unwrap()).unwrap();
         println!("Saved lookup in {}", &output_path)
+    }
+
+    if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
+        let port = clap_matches.value_of("port").unwrap();
+        server::start_server(String::from(port)).unwrap()
     }
 }
