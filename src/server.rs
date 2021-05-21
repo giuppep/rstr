@@ -1,7 +1,10 @@
 use crate::blob;
 use actix_multipart::Multipart;
+use actix_web::middleware::Logger;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use blob::BlobRef;
+use env_logger::Env;
+use log;
 use sha2::{Digest, Sha256};
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -71,7 +74,6 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
             }
         }
         let blob_ref = BlobRef::new(&format!("{:x}", hasher.finalize())[..]);
-        println!("{} has been created", blob_ref);
 
         let save_path = blob_ref.to_path();
         web::block(move || {
@@ -81,6 +83,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         .await
         .unwrap();
 
+        log::info!("{} has been created", blob_ref);
         blobs.push(blob_ref)
     }
     let hashes: Vec<&str> = blobs.iter().map(|b| &b.hash[..]).collect();
@@ -95,8 +98,15 @@ fn init_routes(cfg: &mut web::ServiceConfig) {
 
 #[actix_web::main]
 pub async fn start_server(port: String) -> std::io::Result<()> {
-    HttpServer::new(|| App::new().configure(init_routes))
-        .bind(format!("127.0.0.1:{}", port))?
-        .run()
-        .await
+    std::env::set_var("RUST_LOG", "info,actix_web=debug");
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+
+    HttpServer::new(|| {
+        App::new()
+            .configure(init_routes)
+            .wrap(Logger::new("%r %s %b bytes %D msecs"))
+    })
+    .bind(format!("127.0.0.1:{}", port))?
+    .run()
+    .await
 }
