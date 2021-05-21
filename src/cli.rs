@@ -8,18 +8,19 @@ pub fn app() -> App<'static, 'static> {
         .global_setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("add")
-                .about("Adds a new file to the blob store")
+                .about("Adds a new file to the blob store.")
                 .arg(
-                    Arg::with_name("file")
+                    Arg::with_name("files")
                         .required(true)
                         .index(1)
+                        .multiple(true)
                         .value_name("FILE")
                         .help("Path to the file to add"),
                 ),
         )
         .subcommand(
             SubCommand::with_name("import")
-                .about("Recursively imports files from a directory into the blob store")
+                .about("Recursively imports files from a directory into the blob store.")
                 .arg(
                     Arg::with_name("dir")
                         .required(true)
@@ -45,20 +46,21 @@ pub fn app() -> App<'static, 'static> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("get")
-                .about("Retrieves a file from the blob store")
+            SubCommand::with_name("check")
+                .about("Given a list of refs, checks if they are present in the blob store.")
                 .arg(
-                    Arg::with_name("hash")
+                    Arg::with_name("refs")
                         .required(true)
                         .index(1)
-                        .value_name("HASH")
-                        .help("The hash of the file to retrieve"),
+                        .value_name("REF")
+                        .multiple(true)
+                        .help("The reference of the blobs to check"),
                 )
                 .arg(
                     Arg::with_name("metadata")
                         .long("metadata")
                         .required(false)
-                        .help("Return just the metadata"),
+                        .help("Prints the blob's metadata"),
                 ),
         )
         .subcommand(
