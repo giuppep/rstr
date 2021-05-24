@@ -1,11 +1,10 @@
 use crate::blob::BlobRef;
 use ignore::{WalkBuilder, WalkState};
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::sync::mpsc;
 
-pub fn add_file(path: &Path) -> BlobRef {
+pub fn add_file(path: &Path, verbose: bool) -> BlobRef {
     assert!(path.is_file());
 
     let blob_ref = BlobRef::from_path(&path).unwrap();
@@ -15,10 +14,13 @@ pub fn add_file(path: &Path) -> BlobRef {
         let filename = path.file_name().unwrap();
         fs::copy(path, save_path.join(&filename)).expect("Could not copy");
     }
+    if verbose {
+        println!("{}\t{}", blob_ref.hash, path.to_str().unwrap());
+    }
     blob_ref
 }
 
-fn add_folder_multi_threaded(path: &Path) -> HashMap<String, String> {
+fn add_folder_multi_threaded(path: &Path, verbose: bool) -> Vec<BlobRef> {
     let walker = WalkBuilder::new(path);
     let (tx, rx) = mpsc::channel();
     walker.build_parallel().run(|| {
@@ -27,9 +29,8 @@ fn add_folder_multi_threaded(path: &Path) -> HashMap<String, String> {
             Ok(entry) => {
                 let path = entry.path();
                 if path.is_file() {
-                    let blob_ref = add_file(path);
-                    tx.send((String::from(path.to_str().unwrap()), blob_ref))
-                        .expect("Err");
+                    let blob_ref = add_file(path, verbose);
+                    tx.send(blob_ref).expect("Err");
                 }
                 WalkState::Continue
             }
@@ -38,38 +39,39 @@ fn add_folder_multi_threaded(path: &Path) -> HashMap<String, String> {
     });
 
     drop(tx);
-    let mut output = HashMap::new();
-    for (path, blob_ref) in rx.iter() {
-        output.insert(path, blob_ref.hash);
+    let mut blob_refs = vec![];
+    for blob_ref in rx.iter() {
+        blob_refs.push(blob_ref);
     }
-    output
+    blob_refs
 }
 
-fn add_folder_single_threaded(path: &Path) -> HashMap<String, String> {
+fn add_folder_single_threaded(path: &Path, verbose: bool) -> Vec<BlobRef> {
     let walker = WalkBuilder::new(path);
-    let mut output = HashMap::new();
+    let mut blob_refs = vec![];
     for entry in walker.build() {
         match entry {
             Ok(entry) => {
                 let path = entry.path();
                 if path.is_file() {
-                    let blob_ref = add_file(path);
-                    output.insert(String::from(path.to_str().unwrap()), blob_ref.hash);
+                    let blob_ref = add_file(path, verbose);
+                    blob_refs.push(blob_ref);
                 }
             }
             Err(_) => (),
         }
     }
-    output
+    blob_refs
 }
-pub fn add_folder(path: &Path, parallel: bool) -> HashMap<String, String> {
+pub fn add_folder(path: &Path, parallel: bool, verbose: bool) -> Vec<BlobRef> {
     assert!(path.is_dir());
 
     let blob_refs = match parallel {
-        true => add_folder_multi_threaded(path),
-        false => add_folder_single_threaded(path),
+        true => add_folder_multi_threaded(path, verbose),
+        false => add_folder_single_threaded(path, verbose),
     };
-
-    println!("Imported {} files", blob_refs.len());
+    if verbose {
+        println!("Imported {} files", blob_refs.len());
+    }
     blob_refs
 }
