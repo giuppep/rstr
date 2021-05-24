@@ -31,7 +31,7 @@ fn main() {
                 true if show_metadata => println!(
                     "{}\t\tPRESENT\t\t{:?}",
                     blob_ref,
-                    blob_ref.get_metadata().unwrap()
+                    blob_ref.metadata().unwrap()
                 ),
                 true => println!("{}\t\tPRESENT", blob_ref),
                 false => println!("{}\t\tMISSING", blob_ref),

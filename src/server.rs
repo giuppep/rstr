@@ -24,9 +24,9 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
             .body(format!("Could not find blob corresponding to {}", &hash));
     }
 
-    let mimetype = blob_ref.get_mime().unwrap();
+    let mimetype = blob_ref.mime().unwrap();
     // TODO: change to stream?
-    match blob_ref.get_content() {
+    match blob_ref.content() {
         Ok(content) => HttpResponse::Ok().content_type(mimetype).body(content),
         Err(_) => HttpResponse::InternalServerError().body("Cannot open file"),
     }
@@ -40,7 +40,7 @@ async fn get_blob_metadata(web::Path((hash,)): web::Path<(String,)>) -> impl Res
             .body(format!("Could not find blob corresponding to {}", &hash));
     }
 
-    let metadata = blob_ref.get_metadata();
+    let metadata = blob_ref.metadata();
     match metadata {
         Ok(metadata) => HttpResponse::Ok().json(metadata),
         Err(_) => HttpResponse::InternalServerError().body("Cannot retrieve metadata"),

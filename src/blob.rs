@@ -43,13 +43,10 @@ impl BlobRef {
 
     pub fn exists(&self) -> bool {
         let dir = self.to_path();
-        if dir.exists() {
-            return !dir.read_dir().unwrap().next().is_none();
-        }
-        false
+        dir.exists() && !dir.read_dir().unwrap().next().is_none()
     }
 
-    fn get_file_path(&self) -> Result<PathBuf, &'static str> {
+    fn file_path(&self) -> Result<PathBuf, &'static str> {
         // Get the full path to the file, including the filename
         match self.to_path().read_dir() {
             Ok(entries) => {
@@ -61,26 +58,26 @@ impl BlobRef {
             Err(_) => Err("Directory not found"),
         }
     }
-    pub fn get_mime(&self) -> Result<&str, &'static str> {
-        match infer::get_from_path(self.get_file_path()?).expect("could not read file") {
+    pub fn mime(&self) -> Result<&str, &'static str> {
+        match infer::get_from_path(self.file_path()?).expect("could not read file") {
             Some(mime) => return Ok(mime.mime_type()),
             _ => return Ok("application/octet-stream"),
         }
     }
-    pub fn get_content(&self) -> Result<Vec<u8>, &'static str> {
-        match fs::read(&self.get_file_path()?) {
+    pub fn content(&self) -> Result<Vec<u8>, &'static str> {
+        match fs::read(&self.file_path()?) {
             Ok(f) => Ok(f),
             Err(_) => Err("Cannot open the file"),
         }
     }
 
-    pub fn get_metadata(&self) -> Result<BlobMetadata, &'static str> {
+    pub fn metadata(&self) -> Result<BlobMetadata, &'static str> {
         if !self.exists() {
             return Err("File not found");
         }
 
         let filename = self
-            .get_file_path()?
+            .file_path()?
             .file_name()
             .unwrap()
             .to_str()
@@ -88,7 +85,7 @@ impl BlobRef {
             .to_string();
 
         Ok(BlobMetadata {
-            mime_type: String::from(self.get_mime()?),
+            mime_type: String::from(self.mime()?),
             filename,
         })
     }
