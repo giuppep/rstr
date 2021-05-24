@@ -18,8 +18,8 @@ pub struct BlobRef {
 
 #[derive(Debug, Serialize)]
 pub struct BlobMetadata {
-    filename: String,
-    mime_type: String,
+    pub filename: String,
+    pub mime_type: String,
 }
 
 impl BlobRef {
