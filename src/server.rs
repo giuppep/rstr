@@ -18,6 +18,9 @@ async fn hello() -> impl Responder {
 
 #[route("/blobs/{hash}", method = "GET", method = "HEAD")]
 async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
+    if hash.len() != 64 {
+        return HttpResponse::BadRequest().body("Invalid blob reference. Must have 64 chars.");
+    }
     let blob_ref = BlobRef::new(&hash);
     if !blob_ref.exists() {
         return HttpResponse::NotFound()
