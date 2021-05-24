@@ -29,16 +29,6 @@ pub fn app() -> App<'static, 'static> {
                         .help("Path to the directory to add"),
                 )
                 .arg(
-                    Arg::with_name("output")
-                        .long("output")
-                        .short("o")
-                        .takes_value(true)
-                        .value_name("FILE")
-                        .default_value("/tmp/rustore/output.json")
-                        .required(false)
-                        .help("Where to save the output of the import."),
-                )
-                .arg(
                     Arg::with_name("parallel")
                         .long("parallel")
                         .required(false)
