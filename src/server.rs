@@ -1,7 +1,7 @@
 use crate::blob;
 use actix_multipart::Multipart;
 use actix_web::middleware::Logger;
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, route, web, App, HttpResponse, HttpServer, Responder};
 use blob::BlobRef;
 use env_logger::Env;
 use log;
@@ -16,7 +16,7 @@ async fn hello() -> impl Responder {
     HttpResponse::Ok().body("Hello world!")
 }
 
-#[get("/blobs/{hash}")]
+#[route("/blobs/{hash}", method = "GET", method = "HEAD")]
 async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
     let blob_ref = BlobRef::new(&hash);
     if !blob_ref.exists() {
@@ -24,26 +24,14 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
             .body(format!("Could not find blob corresponding to {}", &hash));
     }
 
-    let mimetype = blob_ref.mime().unwrap();
+    let metadata = blob_ref.metadata().unwrap();
     // TODO: change to stream?
     match blob_ref.content() {
-        Ok(content) => HttpResponse::Ok().content_type(mimetype).body(content),
+        Ok(content) => HttpResponse::Ok()
+            .content_type(metadata.mime_type)
+            .header("filename", metadata.filename)
+            .body(content),
         Err(_) => HttpResponse::InternalServerError().body("Cannot open file"),
-    }
-}
-
-#[get("/blobs/{hash}/metadata")]
-async fn get_blob_metadata(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
-    let blob_ref = BlobRef::new(&hash);
-    if !blob_ref.exists() {
-        return HttpResponse::NotFound()
-            .body(format!("Could not find blob corresponding to {}", &hash));
-    }
-
-    let metadata = blob_ref.metadata();
-    match metadata {
-        Ok(metadata) => HttpResponse::Ok().json(metadata),
-        Err(_) => HttpResponse::InternalServerError().body("Cannot retrieve metadata"),
     }
 }
 
@@ -92,7 +80,6 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
 
 fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(get_blob);
-    cfg.service(get_blob_metadata);
     cfg.service(upload_blobs);
 }
 
