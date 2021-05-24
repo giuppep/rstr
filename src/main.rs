@@ -20,6 +20,10 @@ fn main() {
         let show_metadata = clap_matches.is_present("metadata");
 
         for hash in clap_matches.values_of("refs").unwrap() {
+            if hash.len() != 64 {
+                eprintln!("{}\t\tINVALID", hash);
+                continue;
+            }
             let blob_ref = BlobRef::new(&hash);
             match blob_ref.exists() {
                 true if show_metadata => println!(
