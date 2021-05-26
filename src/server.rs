@@ -18,14 +18,16 @@ async fn hello() -> impl Responder {
 
 #[route("/blobs/{hash}", method = "GET", method = "HEAD")]
 async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
-    if hash.len() != 64 {
-        return HttpResponse::BadRequest().body("Invalid blob reference. Must have 64 chars.");
-    }
-    let blob_ref = BlobRef::new(&hash);
-    if !blob_ref.exists() {
-        return HttpResponse::NotFound()
-            .body(format!("Could not find blob corresponding to {}", &hash));
-    }
+    let blob_ref = match BlobRef::new(&hash) {
+        Ok(blob_ref) if !blob_ref.exists() => {
+            return HttpResponse::NotFound()
+                .body(format!("Could not find blob corresponding to {}", &hash));
+        }
+        Ok(blob_ref) => blob_ref,
+        Err(e) => {
+            return HttpResponse::BadRequest().body(e);
+        }
+    };
 
     let metadata = blob_ref.metadata().unwrap();
     // TODO: change to stream?
@@ -40,14 +42,16 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
 
 #[delete("/blobs/{hash}")]
 async fn delete_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
-    if hash.len() != 64 {
-        return HttpResponse::BadRequest().body("Invalid blob reference. Must have 64 chars.");
-    }
-    let blob_ref = BlobRef::new(&hash);
-    if !blob_ref.exists() {
-        return HttpResponse::NotFound()
-            .body(format!("Could not find blob corresponding to {}", &hash));
-    }
+    let blob_ref = match BlobRef::new(&hash) {
+        Ok(blob_ref) if !blob_ref.exists() => {
+            return HttpResponse::NotFound()
+                .body(format!("Could not find blob corresponding to {}", &hash));
+        }
+        Ok(blob_ref) => blob_ref,
+        Err(e) => {
+            return HttpResponse::BadRequest().body(e);
+        }
+    };
 
     match blob_ref.delete() {
         Ok(_) => HttpResponse::Ok().body(""),
@@ -81,7 +85,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
                 _ => (),
             }
         }
-        let blob_ref = BlobRef::new(&format!("{:x}", hasher.finalize())[..]);
+        let blob_ref = BlobRef::new(&format!("{:x}", hasher.finalize())[..]).unwrap();
 
         let save_path = blob_ref.to_path();
         web::block(move || {
@@ -94,7 +98,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         log::info!("{} has been created", blob_ref);
         blobs.push(blob_ref)
     }
-    let hashes: Vec<&str> = blobs.iter().map(|b| &b.hash[..]).collect();
+    let hashes: Vec<&str> = blobs.iter().map(|b| &b.reference()[..]).collect();
     HttpResponse::Ok().json(hashes)
 }
 

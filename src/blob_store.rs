@@ -15,7 +15,7 @@ pub fn add_file(path: &Path, verbose: bool) -> BlobRef {
         fs::copy(path, save_path.join(&filename)).expect("Could not copy");
     }
     if verbose {
-        println!("{}\t{}", blob_ref.hash, path.to_str().unwrap());
+        println!("{}\t{}", blob_ref.reference(), path.to_str().unwrap());
     }
     blob_ref
 }

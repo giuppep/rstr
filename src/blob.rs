@@ -12,8 +12,7 @@ const RUSTORE_DATA_PATH: &str = "/tmp/rustore/";
 
 #[derive(Debug, Clone)]
 pub struct BlobRef {
-    pub hash: String,
-    algorithm: String, // TODO: make enum
+    value: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -23,20 +22,22 @@ pub struct BlobMetadata {
 }
 
 impl BlobRef {
-    pub fn new(hash: &str) -> BlobRef {
-        BlobRef {
-            hash: String::from(hash),
-            algorithm: String::from("sha256"),
+    pub fn new(value: &str) -> Result<BlobRef, &'static str> {
+        match value.len() == 64 {
+            true => Ok(BlobRef {
+                value: String::from(value),
+            }),
+            false => Err("Invalid length. Reference must have 64 characters."),
         }
     }
 
     pub fn to_path(&self) -> PathBuf {
         let base_path = env::var("RUSTORE_DATA_PATH").unwrap_or(String::from(RUSTORE_DATA_PATH));
         let path = Path::new(&base_path)
-            .join(&self.hash[0..2])
-            .join(&self.hash[2..4])
-            .join(&self.hash[4..6])
-            .join(&self.hash[6..]);
+            .join(&self.value[0..2])
+            .join(&self.value[2..4])
+            .join(&self.value[4..6])
+            .join(&self.value[6..]);
 
         path
     }
@@ -99,13 +100,17 @@ impl BlobRef {
         let mut hasher = Sha256::new();
 
         io::copy(&mut file, &mut hasher)?;
-        Ok(BlobRef::new(&format!("{:x}", hasher.finalize())))
+        Ok(BlobRef::new(&format!("{:x}", hasher.finalize())).unwrap())
+    }
+
+    pub fn reference(&self) -> &str {
+        &self.value
     }
 }
 
 impl std::fmt::Display for BlobRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "BlobRef({}:{})", &self.algorithm, &self.hash[..10])
+        write!(f, "BlobRef({})", &self.value[..10])
     }
 }
 
@@ -118,14 +123,15 @@ mod tests {
         let path = Path::new("test/test_file.txt");
         let blob_ref = BlobRef::from_path(&path).unwrap();
         assert_eq!(
-            blob_ref.hash,
+            blob_ref.reference(),
             "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de"
         )
     }
 
     #[test]
     fn test_get_dir() {
-        let hash = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
+        let hash = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de")
+            .unwrap();
         let dir = hash.to_path();
         assert_eq!(
             dir.to_str().unwrap(),

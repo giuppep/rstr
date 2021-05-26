@@ -1,4 +1,4 @@
-use std::{io, path::Path, io::Write};
+use std::{io, io::Write, path::Path};
 mod blob;
 mod blob_store;
 mod cli;
@@ -24,7 +24,14 @@ fn main() {
                 eprintln!("{}\t\tINVALID", hash);
                 continue;
             }
-            let blob_ref = BlobRef::new(&hash);
+            let blob_ref = match BlobRef::new(&hash) {
+                Ok(blob_ref) => blob_ref,
+                Err(_) => {
+                    eprintln!("{}\t\tINVALID", &hash);
+                    continue;
+                }
+            };
+
             match blob_ref.exists() {
                 true if show_metadata => println!(
                     "{}\t\tPRESENT\t\t{:?}",
@@ -39,11 +46,17 @@ fn main() {
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("delete") {
         for hash in clap_matches.values_of("refs").unwrap() {
-            let blob_ref = BlobRef::new(&hash);
-            if !blob_ref.exists() {
-                println!("{}\t\tMISSING", blob_ref);
-                continue;
-            }
+            let blob_ref = match BlobRef::new(&hash) {
+                Ok(blob_ref) if !blob_ref.exists() => {
+                    println!("{}\t\tMISSING", blob_ref);
+                    continue;
+                }
+                Ok(blob_ref) => blob_ref,
+                Err(_) => {
+                    eprintln!("{}\t\tINVALID", &hash);
+                    continue;
+                }
+            };
 
             if clap_matches.is_present("interactive") {
                 let mut confirm = String::new();
@@ -52,9 +65,9 @@ fn main() {
                 io::stdin().read_line(&mut confirm).unwrap();
 
                 if confirm.trim().to_ascii_lowercase() != "y" {
-                    continue
+                    continue;
                 }
-            }
+            };
 
             match blob_ref.delete() {
                 Ok(_) => println!("{}\t\tDELETED", blob_ref),
