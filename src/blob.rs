@@ -46,6 +46,10 @@ impl BlobRef {
         dir.exists() && !dir.read_dir().unwrap().next().is_none()
     }
 
+    pub fn delete(&self) -> io::Result<()> {
+        fs::remove_dir_all(self.to_path())
+    }
+
     fn file_path(&self) -> Result<PathBuf, &'static str> {
         // Get the full path to the file, including the filename
         match self.to_path().read_dir() {

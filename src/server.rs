@@ -1,7 +1,7 @@
 use crate::blob;
 use actix_multipart::Multipart;
 use actix_web::middleware::Logger;
-use actix_web::{get, post, route, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Responder};
 use blob::BlobRef;
 use env_logger::Env;
 use log;
@@ -35,6 +35,23 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
             .header("filename", metadata.filename)
             .body(content),
         Err(_) => HttpResponse::InternalServerError().body("Cannot open file"),
+    }
+}
+
+#[delete("/blobs/{hash}")]
+async fn delete_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
+    if hash.len() != 64 {
+        return HttpResponse::BadRequest().body("Invalid blob reference. Must have 64 chars.");
+    }
+    let blob_ref = BlobRef::new(&hash);
+    if !blob_ref.exists() {
+        return HttpResponse::NotFound()
+            .body(format!("Could not find blob corresponding to {}", &hash));
+    }
+
+    match blob_ref.delete() {
+        Ok(_) => HttpResponse::Ok().body(""),
+        Err(_) => HttpResponse::InternalServerError().body("Cannot delete file"),
     }
 }
 
@@ -84,6 +101,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
 fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(get_blob);
     cfg.service(upload_blobs);
+    cfg.service(delete_blob);
 }
 
 #[actix_web::main]

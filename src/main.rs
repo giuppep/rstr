@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{io, path::Path, io::Write};
 mod blob;
 mod blob_store;
 mod cli;
@@ -33,6 +33,32 @@ fn main() {
                 ),
                 true => println!("{}\t\tPRESENT", blob_ref),
                 false => println!("{}\t\tMISSING", blob_ref),
+            }
+        }
+    }
+
+    if let Some(clap_matches) = clap_matches.subcommand_matches("delete") {
+        for hash in clap_matches.values_of("refs").unwrap() {
+            let blob_ref = BlobRef::new(&hash);
+            if !blob_ref.exists() {
+                println!("{}\t\tMISSING", blob_ref);
+                continue;
+            }
+
+            if clap_matches.is_present("interactive") {
+                let mut confirm = String::new();
+                print!("Do you want to delete {}? [y/n]: ", blob_ref);
+                io::stdout().flush().unwrap();
+                io::stdin().read_line(&mut confirm).unwrap();
+
+                if confirm.trim().to_ascii_lowercase() != "y" {
+                    continue
+                }
+            }
+
+            match blob_ref.delete() {
+                Ok(_) => println!("{}\t\tDELETED", blob_ref),
+                Err(_) => eprintln!("{}\t\tERROR", blob_ref),
             }
         }
     }
