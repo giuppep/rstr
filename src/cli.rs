@@ -19,6 +19,25 @@ pub fn app() -> App<'static, 'static> {
                 ),
         )
         .subcommand(
+            SubCommand::with_name("delete")
+                .about("Adds a new file to the blob store.")
+                .arg(
+                    Arg::with_name("refs")
+                        .required(true)
+                        .index(1)
+                        .value_name("REF")
+                        .multiple(true)
+                        .help("The reference of the blobs to delete"),
+                )
+                .arg(
+                    Arg::with_name("interactive")
+                        .required(false)
+                        .takes_value(false)
+                        .short("i")
+                        .help("Ask for confirmation before deleting each blob."),
+                ),
+        )
+        .subcommand(
             SubCommand::with_name("import")
                 .about("Recursively imports files from a directory into the blob store.")
                 .arg(
