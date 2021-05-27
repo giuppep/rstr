@@ -1,4 +1,4 @@
-use serde::Serialize;
+use chrono::{offset::Utc, DateTime};
 use sha2::{Digest, Sha256};
 use std::{
     env,
@@ -15,10 +15,12 @@ pub struct BlobRef {
     value: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct BlobMetadata {
     pub filename: String,
     pub mime_type: String,
+    pub size: u64,
+    pub created: DateTime<Utc>,
 }
 
 impl BlobRef {
@@ -77,21 +79,15 @@ impl BlobRef {
     }
 
     pub fn metadata(&self) -> Result<BlobMetadata, &'static str> {
-        if !self.exists() {
-            return Err("File not found");
-        }
+        let file_path = self.file_path()?;
+        let filename = file_path.file_name().unwrap().to_str().unwrap().to_string();
 
-        let filename = self
-            .file_path()?
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string();
-
+        let metadata = fs::metadata(file_path).unwrap();
         Ok(BlobMetadata {
             mime_type: String::from(self.mime()?),
             filename,
+            size: metadata.len(),
+            created: metadata.created().unwrap().into(),
         })
     }
 
