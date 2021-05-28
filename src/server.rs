@@ -11,9 +11,9 @@ use tempfile::NamedTempFile;
 
 use futures::{StreamExt, TryStreamExt};
 
-#[get("/")]
-async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
+#[get("/status")]
+async fn app_status() -> impl Responder {
+    HttpResponse::Ok()
 }
 
 #[route("/blobs/{hash}", method = "GET", method = "HEAD")]
@@ -104,6 +104,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
 }
 
 fn init_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(app_status);
     cfg.service(get_blob);
     cfg.service(upload_blobs);
     cfg.service(delete_blob);
