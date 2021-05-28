@@ -7,7 +7,7 @@ use std::sync::mpsc;
 pub fn add_file(path: &Path, verbose: bool) -> BlobRef {
     assert!(path.is_file());
 
-    let blob_ref = BlobRef::from_path(&path).unwrap();
+    let blob_ref = BlobRef::from_path(path).unwrap();
     if !blob_ref.exists() {
         let save_path = &blob_ref.to_path();
         fs::create_dir_all(save_path).expect("Could not create save directory");

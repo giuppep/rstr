@@ -5,7 +5,7 @@ use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Re
 use blob::BlobRef;
 use env_logger::Env;
 use log;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 use std::io::Write;
 use tempfile::NamedTempFile;
 
@@ -74,7 +74,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
             .await
             .unwrap();
 
-        let mut hasher = Sha256::new();
+        let mut hasher = BlobRef::hasher();
         while let Some(Ok(chunk)) = field.next().await {
             match content_type.get_name().unwrap() {
                 "file" => {
@@ -86,7 +86,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
                 _ => (),
             }
         }
-        let blob_ref = BlobRef::new(&format!("{:x}", hasher.finalize())[..]).unwrap();
+        let blob_ref = BlobRef::from_hasher(hasher);
 
         let save_path = blob_ref.to_path();
         web::block(move || {
