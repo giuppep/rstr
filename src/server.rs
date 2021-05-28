@@ -4,7 +4,6 @@ use actix_web::middleware::Logger;
 use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Responder};
 use blob::BlobRef;
 use env_logger::Env;
-use log;
 use sha2::Digest;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -76,14 +75,11 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
 
         let mut hasher = BlobRef::hasher();
         while let Some(Ok(chunk)) = field.next().await {
-            match content_type.get_name().unwrap() {
-                "file" => {
-                    hasher.update(&chunk);
-                    tmp_file = web::block(move || tmp_file.write_all(&chunk).map(|_| tmp_file))
-                        .await
-                        .unwrap();
-                }
-                _ => (),
+            if content_type.get_name().unwrap() == "file" {
+                hasher.update(&chunk);
+                tmp_file = web::block(move || tmp_file.write_all(&chunk).map(|_| tmp_file))
+                    .await
+                    .unwrap();
             }
         }
         let blob_ref = BlobRef::from_hasher(hasher);
@@ -99,7 +95,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         log::info!("{} has been created", blob_ref);
         blobs.push(blob_ref)
     }
-    let hashes: Vec<&str> = blobs.iter().map(|b| &b.reference()[..]).collect();
+    let hashes: Vec<&str> = blobs.iter().map(|b| b.reference()).collect();
     HttpResponse::Ok().json(hashes)
 }
 

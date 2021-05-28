@@ -50,15 +50,12 @@ fn add_folder_single_threaded(path: &Path, verbose: bool) -> Vec<BlobRef> {
     let walker = WalkBuilder::new(path);
     let mut blob_refs = vec![];
     for entry in walker.build() {
-        match entry {
-            Ok(entry) => {
-                let path = entry.path();
-                if path.is_file() {
-                    let blob_ref = add_file(path, verbose);
-                    blob_refs.push(blob_ref);
-                }
+        if let Ok(entry) = entry {
+            let path = entry.path();
+            if path.is_file() {
+                let blob_ref = add_file(path, verbose);
+                blob_refs.push(blob_ref);
             }
-            Err(_) => (),
         }
     }
     blob_refs
