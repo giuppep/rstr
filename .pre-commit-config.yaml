@@ -3,20 +3,37 @@ repos:
     hooks:
       - id: check
         name: check
-        files: "^.rs"
+        files: ".rs$"
         stages: [commit]
         language: system
         entry: cargo check
         types: [rust]
+        pass_filenames: false
 
       - id: format
         name: format
-        files: "^.rs"
+        files: ".rs$"
         stages: [commit]
         language: system
         pass_filenames: true
         entry: cargo fmt -- --check
         types: [rust]
+
+      - id: clippy
+        name: clippy
+        files: ".rs$"
+        stages: [commit]
+        language: system
+        pass_filenames: false
+        entry: >
+          cargo clippy
+            --all-targets
+            --all-features
+            --
+            --forbid warnings
+            --forbid clippy::all
+            --forbid clippy::pedantic
+            --forbid clippy::cargo
 
       - id: test
         name: test
