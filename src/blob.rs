@@ -49,7 +49,8 @@ impl BlobRef {
     }
 
     pub fn to_path(&self) -> PathBuf {
-        let base_path = env::var("RUSTORE_DATA_PATH").unwrap_or(String::from(RUSTORE_DATA_PATH));
+        let base_path =
+            env::var("RUSTORE_DATA_PATH").unwrap_or_else(|_| String::from(RUSTORE_DATA_PATH));
         let path = Path::new(&base_path)
             .join(&self.value[0..2])
             .join(&self.value[2..4])
@@ -61,7 +62,7 @@ impl BlobRef {
 
     pub fn exists(&self) -> bool {
         let dir = self.to_path();
-        dir.exists() && !dir.read_dir().unwrap().next().is_none()
+        dir.exists() && dir.read_dir().unwrap().next().is_some()
     }
 
     pub fn delete(&self) -> io::Result<()> {
@@ -71,19 +72,19 @@ impl BlobRef {
     fn file_path(&self) -> Result<PathBuf, &'static str> {
         // Get the full path to the file, including the filename
         match self.to_path().read_dir() {
-            Ok(entries) => {
-                for entry in entries {
-                    return Ok(entry.unwrap().path());
-                }
-                return Err("Directory is empty");
+            Ok(mut entries) => {
+                if let Some(Ok(entry)) = entries.next() {
+                    return Ok(entry.path());
+                };
+                Err("Directory is empty")
             }
             Err(_) => Err("Directory not found"),
         }
     }
     pub fn mime(&self) -> Result<&str, &'static str> {
         match infer::get_from_path(self.file_path()?).expect("could not read file") {
-            Some(mime) => return Ok(mime.mime_type()),
-            _ => return Ok("application/octet-stream"),
+            Some(mime) => Ok(mime.mime_type()),
+            _ => Ok("application/octet-stream"),
         }
     }
     pub fn content(&self) -> Result<Vec<u8>, &'static str> {
