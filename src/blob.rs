@@ -33,6 +33,21 @@ impl BlobRef {
         }
     }
 
+    pub fn from_hasher(hasher: Sha256) -> BlobRef {
+        BlobRef::new(&format!("{:x}", hasher.finalize())[..]).unwrap()
+    }
+    pub fn from_path(path: &Path) -> Result<BlobRef, std::io::Error> {
+        let mut file = File::open(path)?;
+        let mut hasher = BlobRef::hasher();
+
+        io::copy(&mut file, &mut hasher)?;
+        Ok(BlobRef::from_hasher(hasher))
+    }
+
+    pub fn hasher() -> Sha256 {
+        Sha256::new()
+    }
+
     pub fn to_path(&self) -> PathBuf {
         let base_path = env::var("RUSTORE_DATA_PATH").unwrap_or(String::from(RUSTORE_DATA_PATH));
         let path = Path::new(&base_path)
@@ -90,15 +105,6 @@ impl BlobRef {
             created: metadata.created().unwrap().into(),
         })
     }
-
-    pub fn from_path(path: &Path) -> Result<BlobRef, std::io::Error> {
-        let mut file = File::open(path)?;
-        let mut hasher = Sha256::new();
-
-        io::copy(&mut file, &mut hasher)?;
-        Ok(BlobRef::new(&format!("{:x}", hasher.finalize())).unwrap())
-    }
-
     pub fn reference(&self) -> &str {
         &self.value
     }
