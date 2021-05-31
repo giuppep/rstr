@@ -157,25 +157,4 @@ mod tests {
             format!("{}{}", TEST_DATA_PATH, TEST_FILE_PATH)
         )
     }
-
-    #[test]
-    fn retrieve_and_delete_file() {
-        let tmp_dir = TempDir::new_in(TEST_DATA_PATH).unwrap();
-        env::set_var("RUSTORE_DATA_PATH", tmp_dir.path().to_str().unwrap());
-
-        let path = Path::new(TEST_FILE_PATH);
-        let path = tmp_dir.path().join(path);
-        fs::create_dir_all(&path).unwrap();
-        fs::copy(TEST_FILE, path.join("test.txt")).unwrap();
-
-        let hash = TEST_FILE_HASH;
-        let blob_ref = BlobRef::new(hash).unwrap();
-
-        assert!(blob_ref.exists());
-        assert!(blob_ref.content().is_ok());
-        assert_eq!(blob_ref.metadata().unwrap().filename, "test.txt");
-
-        assert!(blob_ref.delete().is_ok());
-        assert!(!blob_ref.exists());
-    }
 }
