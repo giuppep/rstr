@@ -1,14 +1,18 @@
-use std::{io, io::Write, path::Path};
+use std::{io, io::Write, path::Path, path::PathBuf};
 mod blob;
 mod blob_store;
 mod cli;
 mod error;
 mod server;
 use blob::BlobRef;
+use clap::value_t_or_exit;
 use cli::app;
 
 fn main() {
     let clap_matches = app().get_matches();
+
+    let data_store_path = clap_matches.value_of("data_store_path").unwrap();
+    std::env::set_var("RUSTORE_DATA_PATH", data_store_path);
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
         for input_path in clap_matches.values_of("files").unwrap() {
@@ -85,7 +89,11 @@ fn main() {
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
-        let port = clap_matches.value_of("port").unwrap();
-        server::start_server(String::from(port)).unwrap()
+        let port = value_t_or_exit!(clap_matches.value_of("port"), u16);
+        let log_level = value_t_or_exit!(clap_matches.value_of("log_level"), log::Level);
+        let tmp_folder = value_t_or_exit!(clap_matches.value_of("tmp_folder"), PathBuf);
+
+        let config = server::Config::new(port, log_level, tmp_folder);
+        server::start_server(config).unwrap()
     }
 }
