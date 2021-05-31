@@ -9,8 +9,6 @@ use std::{
     path::PathBuf,
 };
 
-const RUSTORE_DATA_PATH: &str = "/tmp/rustore/";
-
 #[derive(Debug, Clone)]
 pub struct BlobRef {
     value: String,
@@ -50,8 +48,7 @@ impl BlobRef {
     }
 
     pub fn to_path(&self) -> PathBuf {
-        let base_path =
-            env::var("RUSTORE_DATA_PATH").unwrap_or_else(|_| String::from(RUSTORE_DATA_PATH));
+        let base_path = env::var("RUSTORE_DATA_PATH").unwrap();
         let path = Path::new(&base_path)
             .join(&self.value[0..2])
             .join(&self.value[2..4])

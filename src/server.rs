@@ -4,11 +4,28 @@ use actix_web::middleware::Logger;
 use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Responder};
 use blob::BlobRef;
 use env_logger::Env;
+use futures::{StreamExt, TryStreamExt};
+use log;
 use sha2::Digest;
 use std::io::Write;
+use std::path::PathBuf;
 use tempfile::NamedTempFile;
 
-use futures::{StreamExt, TryStreamExt};
+pub struct Config {
+    port: u16,
+    log_level: log::Level,
+    tmp_folder: PathBuf,
+}
+
+impl Config {
+    pub fn new(port: u16, log_level: log::Level, tmp_folder: PathBuf) -> Config {
+        Config {
+            port,
+            log_level,
+            tmp_folder,
+        }
+    }
+}
 
 #[get("/status")]
 async fn app_status() -> impl Responder {
@@ -69,9 +86,10 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         let filename = content_type.get_filename().unwrap_or("file");
         let filename = sanitize_filename::sanitize(filename);
 
-        let mut tmp_file = web::block(|| NamedTempFile::new_in("/tmp/rustore/.tmp/"))
-            .await
-            .unwrap();
+        let mut tmp_file =
+            web::block(|| NamedTempFile::new_in(std::env::var("RUSTORE_TMP_FOLDER").unwrap()))
+                .await
+                .unwrap();
 
         let mut hasher = BlobRef::hasher();
         while let Some(Ok(chunk)) = field.next().await {
@@ -107,16 +125,22 @@ fn init_routes(cfg: &mut web::ServiceConfig) {
 }
 
 #[actix_web::main]
-pub async fn start_server(port: String) -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "info,actix_web=debug");
+pub async fn start_server(config: Config) -> std::io::Result<()> {
+    std::env::set_var(
+        "RUST_LOG",
+        format!("{},actix_web={}", config.log_level, config.log_level),
+    );
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+
+    std::env::set_var("RUSTORE_TMP_FOLDER", &config.tmp_folder);
+    std::fs::create_dir_all(&config.tmp_folder).unwrap();
 
     HttpServer::new(|| {
         App::new()
             .configure(init_routes)
             .wrap(Logger::new("%r %s %b bytes %D msecs"))
     })
-    .bind(format!("127.0.0.1:{}", port))?
+    .bind(format!("127.0.0.1:{}", config.port.to_string()))?
     .run()
     .await
 }
