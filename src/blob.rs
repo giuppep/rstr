@@ -1,12 +1,51 @@
 use chrono::{offset::Utc, DateTime};
 use sha2::{Digest, Sha256};
 use std::{
-    env,
+    env, fmt,
     fs::{self, File},
     io,
     path::Path,
     path::PathBuf,
 };
+
+#[derive(Debug)]
+pub enum BlobError {
+    IO(io::Error),
+    Regular(BlobErrorKind),
+}
+#[derive(Debug)]
+pub enum BlobErrorKind {
+    InvalidRefLength,
+    NotFound,
+}
+
+impl BlobErrorKind {
+    fn as_str(&self) -> &str {
+        match *self {
+            BlobErrorKind::NotFound => "File not found",
+            BlobErrorKind::InvalidRefLength => {
+                "Invalid refererence length. Reference must have 64 characters."
+            }
+        }
+    }
+}
+
+impl fmt::Display for BlobError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            BlobError::IO(ref err) => err.fmt(f),
+            BlobError::Regular(ref err) => write!(f, "Error: {}", err.as_str()),
+        }
+    }
+}
+
+impl From<io::Error> for BlobError {
+    fn from(err: io::Error) -> BlobError {
+        BlobError::IO(err)
+    }
+}
+
+pub type Result<T> = std::result::Result<T, BlobError>;
 
 const RUSTORE_DATA_PATH: &str = "/tmp/rustore/";
 
@@ -24,19 +63,19 @@ pub struct BlobMetadata {
 }
 
 impl BlobRef {
-    pub fn new(value: &str) -> Result<BlobRef, &'static str> {
+    pub fn new(value: &str) -> Result<BlobRef> {
         match value.len() == 64 {
             true => Ok(BlobRef {
                 value: String::from(value),
             }),
-            false => Err("Invalid length. Reference must have 64 characters."),
+            false => Err(BlobError::Regular(BlobErrorKind::InvalidRefLength)),
         }
     }
 
     pub fn from_hasher(hasher: Sha256) -> BlobRef {
         BlobRef::new(&format!("{:x}", hasher.finalize())[..]).unwrap()
     }
-    pub fn from_path(path: &Path) -> Result<BlobRef, std::io::Error> {
+    pub fn from_path(path: &Path) -> Result<BlobRef> {
         let mut file = File::open(path)?;
         let mut hasher = BlobRef::hasher();
 
@@ -69,32 +108,25 @@ impl BlobRef {
         fs::remove_dir_all(self.to_path())
     }
 
-    fn file_path(&self) -> Result<PathBuf, &'static str> {
+    fn file_path(&self) -> Result<PathBuf> {
         // Get the full path to the file, including the filename
-        match self.to_path().read_dir() {
-            Ok(mut entries) => {
-                if let Some(Ok(entry)) = entries.next() {
-                    return Ok(entry.path());
-                };
-                Err("Directory is empty")
-            }
-            Err(_) => Err("Directory not found"),
-        }
+        let mut entries = self.to_path().read_dir().map_err(BlobError::IO)?;
+        if let Some(Ok(entry)) = entries.next() {
+            return Ok(entry.path());
+        };
+        Err(BlobError::Regular(BlobErrorKind::NotFound))
     }
-    pub fn mime(&self) -> Result<&str, &'static str> {
-        match infer::get_from_path(self.file_path()?).expect("could not read file") {
+    pub fn mime(&self) -> Result<&str> {
+        match infer::get_from_path(self.file_path()?).map_err(BlobError::IO)? {
             Some(mime) => Ok(mime.mime_type()),
             _ => Ok("application/octet-stream"),
         }
     }
-    pub fn content(&self) -> Result<Vec<u8>, &'static str> {
-        match fs::read(&self.file_path()?) {
-            Ok(f) => Ok(f),
-            Err(_) => Err("Cannot open the file"),
-        }
+    pub fn content(&self) -> Result<Vec<u8>> {
+        fs::read(&self.file_path()?).map_err(BlobError::IO)
     }
 
-    pub fn metadata(&self) -> Result<BlobMetadata, &'static str> {
+    pub fn metadata(&self) -> Result<BlobMetadata> {
         let file_path = self.file_path()?;
         let filename = file_path.file_name().unwrap().to_str().unwrap().to_string();
 
