@@ -30,7 +30,7 @@ impl BlobRef {
             true => Ok(BlobRef {
                 value: String::from(value),
             }),
-            false => Err(BlobError::Regular(BlobErrorKind::InvalidRefLength)),
+            false => Err(BlobError::Blob(BlobErrorKind::InvalidRefLength)),
         }
     }
 
@@ -76,7 +76,7 @@ impl BlobRef {
         if let Some(Ok(entry)) = entries.next() {
             return Ok(entry.path());
         };
-        Err(BlobError::Regular(BlobErrorKind::NotFound))
+        Err(BlobError::Blob(BlobErrorKind::NotFound))
     }
     pub fn mime(&self) -> Result<&str> {
         match infer::get_from_path(self.file_path()?).map_err(BlobError::IO)? {
