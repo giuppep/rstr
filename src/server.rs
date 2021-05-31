@@ -24,7 +24,7 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
         }
         Ok(blob_ref) => blob_ref,
         Err(e) => {
-            return HttpResponse::BadRequest().body(e);
+            return HttpResponse::BadRequest().body(e.to_string());
         }
     };
 
@@ -49,7 +49,7 @@ async fn delete_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder
         }
         Ok(blob_ref) => blob_ref,
         Err(e) => {
-            return HttpResponse::BadRequest().body(e);
+            return HttpResponse::BadRequest().body(e.to_string());
         }
     };
 
