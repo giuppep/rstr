@@ -1,4 +1,4 @@
-use crate::error::{BlobError, BlobErrorKind};
+use crate::error::{BlobError, BlobErrorKind, Result};
 use chrono::{offset::Utc, DateTime};
 use sha2::{Digest, Sha256};
 use std::{
@@ -8,8 +8,6 @@ use std::{
     path::Path,
     path::PathBuf,
 };
-
-pub type Result<T> = std::result::Result<T, BlobError>;
 
 const RUSTORE_DATA_PATH: &str = "/tmp/rustore/";
 

@@ -13,7 +13,9 @@ fn main() {
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
         for input_path in clap_matches.values_of("files").unwrap() {
             let input_path = Path::new(input_path);
-            blob_store::add_file(input_path, true);
+            if let Err(e) = blob_store::add_file(input_path, true) {
+                eprintln!("Could not add {:?}: {}", input_path, e)
+            }
         }
     }
 
@@ -21,10 +23,6 @@ fn main() {
         let show_metadata = clap_matches.is_present("metadata");
 
         for hash in clap_matches.values_of("refs").unwrap() {
-            if hash.len() != 64 {
-                eprintln!("{}\t\tINVALID", hash);
-                continue;
-            }
             let blob_ref = match BlobRef::new(&hash) {
                 Ok(blob_ref) => blob_ref,
                 Err(_) => {
@@ -81,7 +79,9 @@ fn main() {
         let input_path = Path::new(clap_matches.value_of("dir").unwrap());
         let parallel = clap_matches.is_present("parallel");
 
-        blob_store::add_folder(input_path, parallel, true);
+        if let Err(e) = blob_store::add_folder(input_path, parallel, true) {
+            eprintln!("Could not add {:?}: {}", input_path, e)
+        }
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("start") {

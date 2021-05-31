@@ -36,3 +36,5 @@ impl From<io::Error> for BlobError {
         BlobError::IO(err)
     }
 }
+
+pub type Result<T> = std::result::Result<T, BlobError>;
