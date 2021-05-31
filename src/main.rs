@@ -2,6 +2,7 @@ use std::{io, io::Write, path::Path};
 mod blob;
 mod blob_store;
 mod cli;
+mod error;
 mod server;
 use blob::BlobRef;
 use cli::app;
