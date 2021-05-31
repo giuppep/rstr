@@ -120,25 +120,62 @@ impl std::fmt::Display for BlobRef {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::TempDir;
+
+    const TEST_DATA_PATH: &str = "test/";
+    const TEST_FILE: &str = "test/test_file.txt";
+    const TEST_FILE_HASH: &str = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
+    const TEST_FILE_PATH: &str =
+        "f2/9b/c6/4a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
 
     #[test]
     fn test_hashing() {
-        let path = Path::new("test/test_file.txt");
+        let path = Path::new(TEST_FILE);
         let blob_ref = BlobRef::from_path(&path).unwrap();
-        assert_eq!(
-            blob_ref.reference(),
-            "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de"
-        )
+        assert_eq!(blob_ref.reference(), TEST_FILE_HASH)
+    }
+
+    #[test]
+    fn test_create_blob_ref() {
+        let valid_hash = TEST_FILE_HASH;
+        let invalid_hash = "this_is_too_short";
+
+        assert!(BlobRef::new(valid_hash).is_ok());
+        assert!(BlobRef::new(invalid_hash).is_err())
     }
 
     #[test]
     fn test_get_dir() {
-        let hash = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de")
-            .unwrap();
-        let dir = hash.to_path();
+        env::set_var("RUSTORE_DATA_PATH", TEST_DATA_PATH);
+
+        let hash = TEST_FILE_HASH;
+        let blob_ref = BlobRef::new(hash).unwrap();
+        let dir = blob_ref.to_path();
+
         assert_eq!(
             dir.to_str().unwrap(),
-            "/tmp/rustore/f2/9b/c6/4a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de"
+            format!("{}{}", TEST_DATA_PATH, TEST_FILE_PATH)
         )
+    }
+
+    #[test]
+    fn retrieve_and_delete_file() {
+        let tmp_dir = TempDir::new_in(TEST_DATA_PATH).unwrap();
+        env::set_var("RUSTORE_DATA_PATH", tmp_dir.path().to_str().unwrap());
+
+        let path = Path::new(TEST_FILE_PATH);
+        let path = tmp_dir.path().join(path);
+        fs::create_dir_all(&path).unwrap();
+        fs::copy(TEST_FILE, path.join("test.txt")).unwrap();
+
+        let hash = TEST_FILE_HASH;
+        let blob_ref = BlobRef::new(hash).unwrap();
+
+        assert!(blob_ref.exists());
+        assert!(blob_ref.content().is_ok());
+        assert_eq!(blob_ref.metadata().unwrap().filename, "test.txt");
+
+        assert!(blob_ref.delete().is_ok());
+        assert!(!blob_ref.exists());
     }
 }
