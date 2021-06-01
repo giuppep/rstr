@@ -4,7 +4,7 @@ pub fn app() -> App<'static, 'static> {
     let app = App::new("rustore")
         .version(crate_version!())
         .author(crate_authors!())
-        .about("Simmple content addressable blob store")
+        .about("Simple content addressable blob store")
         .global_setting(AppSettings::ArgRequiredElseHelp)
         .arg(
             Arg::with_name("data_store_path")
