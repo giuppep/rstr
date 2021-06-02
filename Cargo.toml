@@ -21,3 +21,5 @@ ignore = "0.4"
 env_logger= "0.8.3"
 log = "0.4.14"
 chrono = "0.4.19"
+indicatif = {version = "0.16.2", features = ["rayon"]}
+rayon = "1.5.1"

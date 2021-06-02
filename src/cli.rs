@@ -55,12 +55,6 @@ pub fn app() -> App<'static, 'static> {
                         .index(1)
                         .value_name("DIRECTORY")
                         .help("Path to the directory to add"),
-                )
-                .arg(
-                    Arg::with_name("parallel")
-                        .long("parallel")
-                        .required(false)
-                        .help("Whether to run in parallel"),
                 ),
         )
         .subcommand(
