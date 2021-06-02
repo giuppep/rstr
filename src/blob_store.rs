@@ -1,10 +1,26 @@
 use crate::blob::BlobRef;
 use crate::error::{BlobError, Result};
 use ignore::{WalkBuilder, WalkState};
+use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
+use rayon::prelude::*;
 use std::path::Path;
+use std::path::PathBuf;
 use std::sync::mpsc;
 use std::{fs, io};
 
+/// Function to add a file from disk to the blob store
+///
+/// # Examples
+///
+/// ```no_run
+/// let path = Path::new("/path/to/my/file");
+/// assert!(path.is_file());
+/// let blob_ref = add_file(path, true);
+/// ```
+/// If verbose is `true` it prints to stdout the reference for the file and it's original path.
+/// ```
+/// f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de        test/test_file.txt
+/// ```
 pub fn add_file(path: &Path, verbose: bool) -> Result<BlobRef> {
     if !path.is_file() {
         return Err(BlobError::IO(io::Error::from(io::ErrorKind::InvalidInput)));
@@ -13,9 +29,9 @@ pub fn add_file(path: &Path, verbose: bool) -> Result<BlobRef> {
     let blob_ref = BlobRef::from_path(path)?;
     if !blob_ref.exists() {
         let save_path = &blob_ref.to_path();
-        fs::create_dir_all(save_path)?;
+        fs::create_dir_all(save_path).map_err(BlobError::IO)?;
         let filename = path.file_name().unwrap();
-        fs::copy(path, save_path.join(&filename))?;
+        fs::copy(path, save_path.join(&filename)).map_err(BlobError::IO)?;
     }
     if verbose {
         println!("{}\t{}", blob_ref.reference(), path.to_str().unwrap());
@@ -23,7 +39,11 @@ pub fn add_file(path: &Path, verbose: bool) -> Result<BlobRef> {
     Ok(blob_ref)
 }
 
-fn add_folder_multi_threaded(path: &Path, verbose: bool) -> Vec<BlobRef> {
+/// Given a path to a directory it recursively walks all its children in parallel
+/// and returns a list of paths to files.
+fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
+    assert!(path.is_dir());
+
     let walker = WalkBuilder::new(path);
     let (tx, rx) = mpsc::channel();
     walker.build_parallel().run(|| {
@@ -32,10 +52,7 @@ fn add_folder_multi_threaded(path: &Path, verbose: bool) -> Vec<BlobRef> {
             Ok(entry) => {
                 let path = entry.path();
                 if path.is_file() {
-                    match add_file(path, verbose) {
-                        Ok(blob_ref) => tx.send(blob_ref).expect("Err"),
-                        Err(e) => eprintln!("{}", e),
-                    }
+                    tx.send(path.into()).expect("Err")
                 }
                 WalkState::Continue
             }
@@ -44,41 +61,55 @@ fn add_folder_multi_threaded(path: &Path, verbose: bool) -> Vec<BlobRef> {
     });
 
     drop(tx);
-    let mut blob_refs = vec![];
-    for blob_ref in rx.iter() {
-        blob_refs.push(blob_ref);
+    let mut paths = vec![];
+    for path in rx.iter() {
+        paths.push(path)
     }
-    blob_refs
+    paths
 }
 
-fn add_folder_single_threaded(path: &Path, verbose: bool) -> Vec<BlobRef> {
-    let walker = WalkBuilder::new(path);
-    let mut blob_refs = vec![];
-    for entry in walker.build() {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.is_file() {
-                match add_file(path, verbose) {
-                    Ok(blob_ref) => blob_refs.push(blob_ref),
-                    Err(e) => eprintln!("{}", e),
-                }
-            }
-        }
-    }
-    blob_refs
-}
-pub fn add_folder(path: &Path, parallel: bool, verbose: bool) -> Result<Vec<BlobRef>> {
+/// Given a path to a directory, it adds to the blob store all the files that are contained
+/// in that directory (and its children).
+///
+/// This function can be useful to import file from e.g. another blob store.
+///
+///
+/// The function calls [`add_file`] to import the single files. The argument `verbose`
+/// is passed to the  [`add_file`] function. Any errors thrown by `add_file` are printed
+/// to `stderr`.
+///
+/// # Examples
+///
+/// ```no_run
+/// let path = Path::new("/path/to/my/files/");
+/// let blob_refs = add_folder(path, false).unwrap();
+/// ```
+/// # Errors
+///
+/// It will return an error if the path specified is not a directory.
+pub fn add_folder(path: &Path, verbose: bool) -> Result<Vec<BlobRef>> {
     if !path.is_dir() {
         return Err(BlobError::IO(io::Error::from(io::ErrorKind::InvalidInput)));
     }
 
-    let blob_refs = match parallel {
-        true => add_folder_multi_threaded(path, verbose),
-        false => add_folder_single_threaded(path, verbose),
-    };
+    let paths = collect_file_paths(path);
 
-    if verbose {
-        println!("Imported {} files", blob_refs.len());
+    let pb = ProgressBar::new(paths.len() as u64);
+    pb.set_style(ProgressStyle::default_bar().template(
+        "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})",
+    ));
+
+    let (blob_refs, errors): (Vec<_>, Vec<_>) = paths
+        .par_iter()
+        .progress_with(pb)
+        .map(|p| add_file(p, verbose))
+        .partition(Result::is_ok);
+
+    let blob_refs = blob_refs.into_iter().map(Result::unwrap).collect();
+
+    for error in errors.into_iter() {
+        eprintln!("{}", error.unwrap_err().to_string());
     }
+
     Ok(blob_refs)
 }

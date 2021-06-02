@@ -81,9 +81,8 @@ fn main() {
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("import") {
         let input_path = Path::new(clap_matches.value_of("dir").unwrap());
-        let parallel = clap_matches.is_present("parallel");
 
-        if let Err(e) = blob_store::add_folder(input_path, parallel, true) {
+        if let Err(e) = blob_store::add_folder(input_path, true) {
             eprintln!("Could not add {:?}: {}", input_path, e)
         }
     }
