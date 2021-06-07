@@ -1,5 +1,7 @@
 use super::errors::{BlobError, BlobErrorKind, Result};
 use chrono::{offset::Utc, DateTime};
+use lazy_static::lazy_static;
+use regex::Regex;
 use sha2::{Digest, Sha256};
 use std::{
     env,
@@ -42,14 +44,16 @@ impl BlobRef {
     /// # use rustore::blob::BlobRef;
     /// let blob_ref = BlobRef::new("a_short_hash");
     /// assert!(blob_ref.is_err());
-    /// // TODO
-    /// // let blob_ref = BlobRef::new("....aninvalidhash.29bc64a9d3732b4b9035125fdb3285f5b6455778edca7");
-    /// // assert!(blob_ref.is_err());
+    /// let blob_ref = BlobRef::new("....aninvalidhash.29bc64a9d3732b4b9035125fdb3285f5b6455778edca7");
+    /// assert!(blob_ref.is_err());
     /// ```
 
     pub fn new(value: &str) -> Result<BlobRef> {
-        // TODO: validate the hash with a regex to avoid someone asking for e.g. `../../`
-        match value.len() == 64 {
+        lazy_static! {
+            static ref VALID_HASH_REGEX: Regex = Regex::new(r"^[a-z0-9]{64}$").unwrap();
+        }
+
+        match VALID_HASH_REGEX.is_match(value) {
             true => Ok(BlobRef {
                 value: String::from(value),
             }),
