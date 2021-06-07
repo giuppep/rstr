@@ -23,3 +23,5 @@ log = "0.4.14"
 chrono = "0.4.19"
 indicatif = {version = "0.16.2", features = ["rayon"]}
 rayon = "1.5.1"
+regex = "1.5.4"
+lazy_static = "1.4.0"
