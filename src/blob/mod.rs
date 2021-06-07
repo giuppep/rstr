@@ -4,4 +4,4 @@ mod utils;
 
 pub use errors::{BlobError, Result};
 pub use models::{BlobMetadata, BlobRef};
-pub use utils::*;
+pub use utils::add_files;

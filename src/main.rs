@@ -13,12 +13,13 @@ fn main() {
     std::env::set_var("RUSTORE_DATA_PATH", data_store_path);
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
-        for input_path in clap_matches.values_of("files").unwrap() {
-            let input_path = Path::new(input_path);
-            if let Err(e) = blob::add_file(input_path, true) {
-                eprintln!("Could not add {:?}: {}", input_path, e)
-            }
-        }
+        let input_paths = clap_matches
+            .values_of("files")
+            .unwrap()
+            .into_iter()
+            .map(|p| Path::new(p))
+            .collect();
+        blob::add_files(input_paths, true).unwrap();
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("check") {
@@ -74,14 +75,6 @@ fn main() {
                 Ok(_) => println!("{}\t\tDELETED", blob_ref),
                 Err(_) => eprintln!("{}\t\tERROR", blob_ref),
             }
-        }
-    }
-
-    if let Some(clap_matches) = clap_matches.subcommand_matches("import") {
-        let input_path = Path::new(clap_matches.value_of("dir").unwrap());
-
-        if let Err(e) = blob::add_folder(input_path, true) {
-            eprintln!("Could not add {:?}: {}", input_path, e)
         }
     }
 
