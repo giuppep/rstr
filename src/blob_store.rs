@@ -13,12 +13,14 @@ use std::{fs, io};
 /// # Examples
 ///
 /// ```no_run
+/// # use std::path::Path;
+/// # use rustore::add_file;
 /// let path = Path::new("/path/to/my/file");
 /// assert!(path.is_file());
 /// let blob_ref = add_file(path, true);
 /// ```
 /// If verbose is `true` it prints to stdout the reference for the file and it's original path.
-/// ```
+/// ```ignore
 /// f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de        test/test_file.txt
 /// ```
 pub fn add_file(path: &Path, verbose: bool) -> Result<BlobRef> {
@@ -81,6 +83,8 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
 /// # Examples
 ///
 /// ```no_run
+/// # use std::path::Path;
+/// # use rustore::add_folder;
 /// let path = Path::new("/path/to/my/files/");
 /// let blob_refs = add_folder(path, false).unwrap();
 /// ```

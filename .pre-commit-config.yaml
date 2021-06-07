@@ -38,7 +38,7 @@ repos:
       - id: test
         name: test
         stages: [push]
-        entry: cargo test
+        entry: cargo test --doc
         pass_filenames: false
         language: system
         always_run: true
