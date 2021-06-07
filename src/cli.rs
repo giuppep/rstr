@@ -17,14 +17,14 @@ pub fn app() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("add")
-                .about("Adds a new file to the blob store.")
+                .about("Adds a new file/directory to the blob store.")
                 .arg(
                     Arg::with_name("files")
                         .required(true)
                         .index(1)
                         .multiple(true)
-                        .value_name("FILE")
-                        .help("Path to the file to add"),
+                        .value_name("PATH")
+                        .help("Path to the file/directory to add"),
                 ),
         )
         .subcommand(
@@ -44,17 +44,6 @@ pub fn app() -> App<'static, 'static> {
                         .takes_value(false)
                         .short("i")
                         .help("Ask for confirmation before deleting each blob."),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name("import")
-                .about("Recursively imports files from a directory into the blob store.")
-                .arg(
-                    Arg::with_name("dir")
-                        .required(true)
-                        .index(1)
-                        .value_name("DIRECTORY")
-                        .help("Path to the directory to add"),
                 ),
         )
         .subcommand(
