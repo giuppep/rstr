@@ -1,5 +1,4 @@
-use crate::blob::BlobRef;
-use crate::error::{BlobError, Result};
+use crate::blob::{BlobError, BlobRef, Result};
 use ignore::{WalkBuilder, WalkState};
 use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
 use rayon::prelude::*;
@@ -14,7 +13,7 @@ use std::{fs, io};
 ///
 /// ```no_run
 /// # use std::path::Path;
-/// # use rustore::add_file;
+/// # use rustore::blob::add_file;
 /// let path = Path::new("/path/to/my/file");
 /// assert!(path.is_file());
 /// let blob_ref = add_file(path, true);
@@ -84,7 +83,7 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
 ///
 /// ```no_run
 /// # use std::path::Path;
-/// # use rustore::add_folder;
+/// # use rustore::blob::add_folder;
 /// let path = Path::new("/path/to/my/files/");
 /// let blob_refs = add_folder(path, false).unwrap();
 /// ```

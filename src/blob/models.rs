@@ -1,4 +1,4 @@
-use crate::error::{BlobError, BlobErrorKind, Result};
+use super::errors::{BlobError, BlobErrorKind, Result};
 use chrono::{offset::Utc, DateTime};
 use sha2::{Digest, Sha256};
 use std::{
@@ -34,12 +34,12 @@ impl BlobRef {
     /// - contains any char except lowercase letters and digits
     /// # Examples
     /// ```
-    /// # use rustore::BlobRef;
+    /// # use rustore::blob::BlobRef;
     /// let blob_ref = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
     /// assert!(blob_ref.is_ok())
     /// ```
     /// ```
-    /// # use rustore::BlobRef;
+    /// # use rustore::blob::BlobRef;
     /// let blob_ref = BlobRef::new("a_short_hash");
     /// assert!(blob_ref.is_err());
     /// // TODO
@@ -63,7 +63,7 @@ impl BlobRef {
     ///
     /// ```
     /// # use sha2::{Digest, Sha256};
-    /// # use rustore::BlobRef;
+    /// # use rustore::blob::BlobRef;
     /// let mut hasher = Sha256::new();
     /// hasher.update(b"hello world");
     /// let blob_ref = BlobRef::from_hasher(hasher);
@@ -78,7 +78,7 @@ impl BlobRef {
     ///
     /// ```
     /// # use std::path::Path;
-    /// # use rustore::BlobRef;
+    /// # use rustore::blob::BlobRef;
     /// let path = Path::new("test/test_file.txt");
     /// let blob_ref = BlobRef::from_path(path);
     /// assert!(blob_ref.is_ok());
@@ -99,7 +99,7 @@ impl BlobRef {
     /// # Examples
     ///
     /// ```
-    /// # use rustore::BlobRef;
+    /// # use rustore::blob::BlobRef;
     /// # use sha2::{Digest, Sha256};
     /// let mut hasher = BlobRef::hasher();
     /// hasher.update(b"hello world");
@@ -115,7 +115,7 @@ impl BlobRef {
     /// # Examples
     ///
     /// ```
-    /// # use rustore::BlobRef;
+    /// # use rustore::blob::BlobRef;
     /// std::env::set_var("RUSTORE_DATA_PATH", "/tmp/rustore");
     /// let hash = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
     /// let blob_ref = BlobRef::new(hash).unwrap();

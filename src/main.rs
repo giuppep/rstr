@@ -1,8 +1,6 @@
 use std::{io, io::Write, path::Path, path::PathBuf};
 mod blob;
-mod blob_store;
 mod cli;
-mod error;
 mod server;
 use blob::BlobRef;
 use clap::value_t_or_exit;
@@ -17,7 +15,7 @@ fn main() {
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
         for input_path in clap_matches.values_of("files").unwrap() {
             let input_path = Path::new(input_path);
-            if let Err(e) = blob_store::add_file(input_path, true) {
+            if let Err(e) = blob::add_file(input_path, true) {
                 eprintln!("Could not add {:?}: {}", input_path, e)
             }
         }
@@ -82,7 +80,7 @@ fn main() {
     if let Some(clap_matches) = clap_matches.subcommand_matches("import") {
         let input_path = Path::new(clap_matches.value_of("dir").unwrap());
 
-        if let Err(e) = blob_store::add_folder(input_path, true) {
+        if let Err(e) = blob::add_folder(input_path, true) {
             eprintln!("Could not add {:?}: {}", input_path, e)
         }
     }
