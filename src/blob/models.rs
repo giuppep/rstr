@@ -1,4 +1,4 @@
-use super::errors::{BlobError, BlobErrorKind, Result};
+use super::errors::{Error, Result};
 use chrono::{offset::Utc, DateTime};
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -31,8 +31,8 @@ impl BlobRef {
     ///
     /// # Errors
     ///
-    /// The method will error if the input string
-    /// - has length != 64
+    /// The method will return a [`Error::InvalidRef`] if the input string
+    /// - has `len() != 64`
     /// - contains any char except lowercase letters and digits
     /// # Examples
     /// ```
@@ -58,7 +58,7 @@ impl BlobRef {
                 value: String::from(value),
             })
         } else {
-            Err(BlobError::Blob(BlobErrorKind::InvalidRef))
+            Err(Error::InvalidRef)
         }
     }
 
@@ -151,7 +151,7 @@ impl BlobRef {
 
     /// Deletes the file referenced by the BlobRef.
     pub fn delete(&self) -> Result<()> {
-        fs::remove_dir_all(self.to_path()).map_err(BlobError::Io)
+        Ok(fs::remove_dir_all(self.to_path())?)
     }
 
     /// Get the full path to the file, including the filename
@@ -162,18 +162,18 @@ impl BlobRef {
     /// - the directory cannot be read
     /// - the directory is empty
     fn file_path(&self) -> Result<PathBuf> {
-        let mut entries = self.to_path().read_dir().map_err(BlobError::Io)?;
+        let mut entries = self.to_path().read_dir()?;
         if let Some(Ok(entry)) = entries.next() {
             return Ok(entry.path());
         };
-        Err(BlobError::Io(io::Error::from(io::ErrorKind::NotFound)))
+        Err(Error::Io(io::Error::from(io::ErrorKind::NotFound)))
     }
 
     /// Returns the mime type inferred from the file's magic number as a string.
     /// It defaults to "application/octet-stream" if it cannot determine the type.
     /// We use the [`infer`] crate to infer the mime type.
     pub fn mime(&self) -> Result<&str> {
-        match infer::get_from_path(self.file_path()?).map_err(BlobError::Io)? {
+        match infer::get_from_path(self.file_path()?)? {
             Some(mime) => Ok(mime.mime_type()),
             _ => Ok("application/octet-stream"),
         }
@@ -181,7 +181,7 @@ impl BlobRef {
 
     /// Get the content of the referenced file as a byte array.
     pub fn content(&self) -> Result<Vec<u8>> {
-        fs::read(&self.file_path()?).map_err(BlobError::Io)
+        Ok(fs::read(&self.file_path()?)?)
     }
 
     /// Returns some metadata for the file referenced to.
@@ -189,7 +189,7 @@ impl BlobRef {
         let file_path = self.file_path()?;
         let filename = file_path.file_name().unwrap().to_str().unwrap().to_string();
 
-        let metadata = fs::metadata(file_path).map_err(BlobError::Io)?;
+        let metadata = fs::metadata(file_path)?;
         Ok(BlobMetadata {
             mime_type: String::from(self.mime()?),
             filename,
