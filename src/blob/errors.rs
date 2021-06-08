@@ -1,53 +1,51 @@
-use std::{fmt, io};
+use std::{error, fmt, io};
 
 /// Error raised by the blob store
 #[derive(Debug)]
-pub enum BlobError {
+pub enum Error {
     Io(io::Error),
-    Blob(BlobErrorKind),
-}
-
-/// Error kind raised by the blob store
-#[derive(Debug)]
-pub enum BlobErrorKind {
     /// Occurs when trying to instantiate a `BlobRef` with an invalid string.
     ///
     /// # Examples
     ///
     /// ```
-    /// # use rustore::blob::{BlobRef, BlobErrorKind};
-    /// let err = BlobRef::new("invalid").unwrap_err();
-    /// assert_eq!(err, BlobErrorKind::InvalidRef)
+    /// use rustore::blob;
+    /// let err = blob::BlobRef::new("invalid").unwrap_err();
+    /// # // io::Error does not implement PartialEq
+    /// // err == Error::InvalidRef
+    /// assert_eq!(format!("{}", err), "Error: Invalid reference. Reference must have 64 alphanumerical characters.");
     /// ```
     InvalidRef,
 }
 
-impl BlobErrorKind {
-    fn as_str(&self) -> &str {
+impl error::Error for Error {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match *self {
-            BlobErrorKind::InvalidRef => {
-                "Invalid refererence. Reference must have 64 alphanumerical characters."
-            }
+            Error::Io(ref err) => Some(err),
+            _ => None,
         }
     }
 }
 
-impl fmt::Display for BlobError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            BlobError::Io(ref err) => err.fmt(f),
-            BlobError::Blob(ref err) => write!(f, "Error: {}", err.as_str()),
+            Error::Io(ref err) => err.fmt(f),
+            Error::InvalidRef => write!(
+                f,
+                "Error: Invalid reference. Reference must have 64 alphanumerical characters."
+            ),
         }
     }
 }
 
-impl From<io::Error> for BlobError {
-    fn from(err: io::Error) -> BlobError {
-        BlobError::Io(err)
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
     }
 }
 
 /// Shorthand for [`Result`] type
 ///
 /// [`Result`]: https://doc.rust-lang.org/std/result/enum.Result.html
-pub type Result<T> = std::result::Result<T, BlobError>;
+pub type Result<T> = std::result::Result<T, Error>;

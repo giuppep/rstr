@@ -1,4 +1,4 @@
-use crate::blob::{BlobError, BlobRef, Result};
+use crate::blob::{BlobRef, Error, Result};
 use ignore::{WalkBuilder, WalkState};
 use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
 use rayon::prelude::*;
@@ -15,15 +15,15 @@ use std::{fs, io};
 /// ```
 fn add_file(path: &Path, verbose: bool) -> Result<BlobRef> {
     if !path.is_file() {
-        return Err(BlobError::Io(io::Error::from(io::ErrorKind::InvalidInput)));
+        return Err(Error::Io(io::Error::from(io::ErrorKind::InvalidInput)));
     }
 
     let blob_ref = BlobRef::from_path(path)?;
     if !blob_ref.exists() {
         let save_path = &blob_ref.to_path();
-        fs::create_dir_all(save_path).map_err(BlobError::Io)?;
+        fs::create_dir_all(save_path).map_err(Error::Io)?;
         let filename = path.file_name().unwrap();
-        fs::copy(path, save_path.join(&filename)).map_err(BlobError::Io)?;
+        fs::copy(path, save_path.join(&filename)).map_err(Error::Io)?;
     }
     if verbose {
         println!("{}\t{}", blob_ref.reference(), path.to_str().unwrap());
