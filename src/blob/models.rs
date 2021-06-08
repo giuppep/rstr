@@ -27,7 +27,7 @@ pub struct BlobMetadata {
 }
 
 impl BlobRef {
-    /// Creates a new BlobRef from a valid hex representation of the sha256 hash.
+    /// Creates a new `BlobRef` from a valid hex representation of the sha256 hash.
     ///
     /// # Errors
     ///
@@ -53,15 +53,16 @@ impl BlobRef {
             static ref VALID_HASH_REGEX: Regex = Regex::new(r"^[a-z0-9]{64}$").unwrap();
         }
 
-        match VALID_HASH_REGEX.is_match(value) {
-            true => Ok(BlobRef {
+        if VALID_HASH_REGEX.is_match(value) {
+            Ok(BlobRef {
                 value: String::from(value),
-            }),
-            false => Err(BlobError::Blob(BlobErrorKind::InvalidRefLength)),
+            })
+        } else {
+            Err(BlobError::Blob(BlobErrorKind::InvalidRef))
         }
     }
 
-    /// Returns a BlobRef instance from a hasher
+    /// Returns a `BlobRef` instance from a hasher
     ///
     /// # Examples
     ///
@@ -71,12 +72,13 @@ impl BlobRef {
     /// let mut hasher = Sha256::new();
     /// hasher.update(b"hello world");
     /// let blob_ref = BlobRef::from_hasher(hasher);
+    /// assert_eq!(blob_ref.reference(), "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
     /// ```
     pub fn from_hasher(hasher: Sha256) -> BlobRef {
         BlobRef::new(&format!("{:x}", hasher.finalize())[..]).unwrap()
     }
 
-    /// Creates a BlobRef from a document on disk.
+    /// Creates a `BlobRef` from a document on disk.
     ///
     /// # Examples
     ///
@@ -149,7 +151,7 @@ impl BlobRef {
 
     /// Deletes the file referenced by the BlobRef.
     pub fn delete(&self) -> Result<()> {
-        fs::remove_dir_all(self.to_path()).map_err(BlobError::IO)
+        fs::remove_dir_all(self.to_path()).map_err(BlobError::Io)
     }
 
     /// Get the full path to the file, including the filename
@@ -160,18 +162,18 @@ impl BlobRef {
     /// - the directory cannot be read
     /// - the directory is empty
     fn file_path(&self) -> Result<PathBuf> {
-        let mut entries = self.to_path().read_dir().map_err(BlobError::IO)?;
+        let mut entries = self.to_path().read_dir().map_err(BlobError::Io)?;
         if let Some(Ok(entry)) = entries.next() {
             return Ok(entry.path());
         };
-        Err(BlobError::Blob(BlobErrorKind::NotFound))
+        Err(BlobError::Io(io::Error::from(io::ErrorKind::NotFound)))
     }
 
     /// Returns the mime type inferred from the file's magic number as a string.
     /// It defaults to "application/octet-stream" if it cannot determine the type.
     /// We use the [`infer`] crate to infer the mime type.
     pub fn mime(&self) -> Result<&str> {
-        match infer::get_from_path(self.file_path()?).map_err(BlobError::IO)? {
+        match infer::get_from_path(self.file_path()?).map_err(BlobError::Io)? {
             Some(mime) => Ok(mime.mime_type()),
             _ => Ok("application/octet-stream"),
         }
@@ -179,7 +181,7 @@ impl BlobRef {
 
     /// Get the content of the referenced file as a byte array.
     pub fn content(&self) -> Result<Vec<u8>> {
-        fs::read(&self.file_path()?).map_err(BlobError::IO)
+        fs::read(&self.file_path()?).map_err(BlobError::Io)
     }
 
     /// Returns some metadata for the file referenced to.
@@ -187,7 +189,7 @@ impl BlobRef {
         let file_path = self.file_path()?;
         let filename = file_path.file_name().unwrap().to_str().unwrap().to_string();
 
-        let metadata = fs::metadata(file_path).map_err(BlobError::IO)?;
+        let metadata = fs::metadata(file_path).map_err(BlobError::Io)?;
         Ok(BlobMetadata {
             mime_type: String::from(self.mime()?),
             filename,
