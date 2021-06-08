@@ -1,4 +1,4 @@
-use super::errors::{Error, Result};
+use super::error::{Error, Result};
 use chrono::{offset::Utc, DateTime};
 use lazy_static::lazy_static;
 use regex::Regex;
