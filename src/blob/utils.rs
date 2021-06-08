@@ -10,20 +10,20 @@ use std::{fs, io};
 /// Function to add a file from disk to the blob store
 ///
 /// If verbose is `true` it prints to stdout the reference for the file and it's original path.
-/// ```ignore
+/// ```text
 /// f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de        test/test_file.txt
 /// ```
 fn add_file(path: &Path, verbose: bool) -> Result<BlobRef> {
     if !path.is_file() {
-        return Err(BlobError::IO(io::Error::from(io::ErrorKind::InvalidInput)));
+        return Err(BlobError::Io(io::Error::from(io::ErrorKind::InvalidInput)));
     }
 
     let blob_ref = BlobRef::from_path(path)?;
     if !blob_ref.exists() {
         let save_path = &blob_ref.to_path();
-        fs::create_dir_all(save_path).map_err(BlobError::IO)?;
+        fs::create_dir_all(save_path).map_err(BlobError::Io)?;
         let filename = path.file_name().unwrap();
-        fs::copy(path, save_path.join(&filename)).map_err(BlobError::IO)?;
+        fs::copy(path, save_path.join(&filename)).map_err(BlobError::Io)?;
     }
     if verbose {
         println!("{}\t{}", blob_ref.reference(), path.to_str().unwrap());
@@ -65,10 +65,14 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
 /// Given a list of paths to files/directories it adds them to the blob store. In the case
 /// of a directory it adds all the files in its children recursively.
 ///
+/// The function iterates over all paths in parallel and adds each file to the blob store.
 ///
-/// The function calls [`add_file`] to import the single files. The argument `verbose`
-/// is passed to the  [`add_file`] function. Any errors thrown by `add_file` are printed
-/// to `stderr`.
+/// If `verbose` is set to `true` it will print to stdout the reference for the file and
+/// its original path, e.g.:
+/// ```text
+/// f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de        test/test_file.txt
+/// ```
+/// At the end of the process it will print to `stderr` all the errors.
 ///
 /// # Examples
 ///
