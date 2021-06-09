@@ -1,10 +1,9 @@
 use std::{io, io::Write, path::Path, path::PathBuf};
-mod blob;
 mod cli;
 mod server;
-use blob::BlobRef;
 use clap::value_t_or_exit;
 use cli::app;
+use rustore::blob::{self, BlobRef};
 
 fn main() {
     let clap_matches = app().get_matches();

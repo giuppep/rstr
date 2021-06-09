@@ -1,11 +1,10 @@
-use crate::blob;
 use actix_multipart::Multipart;
 use actix_web::middleware::Logger;
 use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Responder};
-use blob::BlobRef;
 use env_logger::Env;
 use futures::{StreamExt, TryStreamExt};
 use log;
+use rustore::blob::BlobRef;
 use sha2::Digest;
 use std::io::Write;
 use std::path::PathBuf;
