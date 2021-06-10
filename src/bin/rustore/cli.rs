@@ -42,7 +42,7 @@ pub fn app() -> App<'static, 'static> {
                     Arg::with_name("interactive")
                         .required(false)
                         .takes_value(false)
-                        .short("i")
+                        .short("I")
                         .help("Ask for confirmation before deleting each blob."),
                 ),
         )
