@@ -77,10 +77,10 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
 /// # Examples
 ///
 /// ```no_run
-/// # use std::path::Path;
+/// # use std::path::PathBuf;
 /// # use rustore::blob::add_files;
-/// let paths = vec![Path::new("/path/to/my/files/")];
-/// let blob_refs = add_files(paths, false).unwrap();
+/// let paths = [PathBuf::from("/path/to/my/files/")];
+/// let blob_refs = add_files(&paths[..], false).unwrap();
 /// ```
 pub fn add_files(paths: &[PathBuf], verbose: bool) -> Result<Vec<BlobRef>> {
     let paths: Vec<PathBuf> = paths
