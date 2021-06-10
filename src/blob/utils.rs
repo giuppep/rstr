@@ -82,7 +82,7 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
 /// let paths = vec![Path::new("/path/to/my/files/")];
 /// let blob_refs = add_files(paths, false).unwrap();
 /// ```
-pub fn add_files(paths: Vec<&Path>, verbose: bool) -> Result<Vec<BlobRef>> {
+pub fn add_files(paths: &[PathBuf], verbose: bool) -> Result<Vec<BlobRef>> {
     let paths: Vec<PathBuf> = paths
         .par_iter()
         .flat_map(|p| collect_file_paths(p))

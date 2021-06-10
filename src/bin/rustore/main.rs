@@ -1,9 +1,69 @@
-use std::{io, io::Write, path::Path, path::PathBuf};
+use std::{io, io::Write, path::PathBuf};
 mod cli;
 mod server;
 use clap::value_t_or_exit;
 use cli::app;
 use rustore::blob::{self, BlobRef};
+
+fn delete_blobs<'a, I>(hashes: I, interactive: bool)
+where
+    I: Iterator<Item = &'a str>,
+{
+    for hash in hashes {
+        let blob_ref = match BlobRef::new(&hash) {
+            Ok(blob_ref) if !blob_ref.exists() => {
+                println!("{}\t\tMISSING", blob_ref);
+                continue;
+            }
+            Ok(blob_ref) => blob_ref,
+            Err(_) => {
+                eprintln!("{}\t\tINVALID", &hash);
+                continue;
+            }
+        };
+
+        if interactive {
+            let mut confirm = String::new();
+            print!("Do you want to delete {}? [y/n]: ", blob_ref);
+            io::stdout().flush().unwrap();
+            io::stdin().read_line(&mut confirm).unwrap();
+
+            if confirm.trim().to_ascii_lowercase() != "y" {
+                continue;
+            }
+        };
+
+        match blob_ref.delete() {
+            Ok(_) => println!("{}\t\tDELETED", blob_ref),
+            Err(_) => eprintln!("{}\t\tERROR", blob_ref),
+        }
+    }
+}
+
+fn check_blobs<'a, I>(hashes: I, show_metadata: bool)
+where
+    I: Iterator<Item = &'a str>,
+{
+    for hash in hashes {
+        let blob_ref = match BlobRef::new(&hash) {
+            Ok(blob_ref) => blob_ref,
+            Err(_) => {
+                eprintln!("{}\t\tINVALID", &hash);
+                continue;
+            }
+        };
+
+        match blob_ref.exists() {
+            true if show_metadata => println!(
+                "{}\t\tPRESENT\t\t{:?}",
+                blob_ref,
+                blob_ref.metadata().unwrap()
+            ),
+            true => println!("{}\t\tPRESENT", blob_ref),
+            false => println!("{}\t\tMISSING", blob_ref),
+        }
+    }
+}
 
 fn main() {
     let clap_matches = app().get_matches();
@@ -12,69 +72,27 @@ fn main() {
     std::env::set_var("RUSTORE_DATA_PATH", data_store_path);
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
-        let input_paths = clap_matches
+        let input_paths: Vec<PathBuf> = clap_matches
             .values_of("files")
             .unwrap()
             .into_iter()
-            .map(|p| Path::new(p))
+            .map(PathBuf::from)
             .collect();
-        blob::add_files(input_paths, true).unwrap();
+        blob::add_files(&input_paths[..], true).unwrap();
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("check") {
         let show_metadata = clap_matches.is_present("metadata");
+        let hashes = clap_matches.values_of("refs").unwrap();
 
-        for hash in clap_matches.values_of("refs").unwrap() {
-            let blob_ref = match BlobRef::new(&hash) {
-                Ok(blob_ref) => blob_ref,
-                Err(_) => {
-                    eprintln!("{}\t\tINVALID", &hash);
-                    continue;
-                }
-            };
-
-            match blob_ref.exists() {
-                true if show_metadata => println!(
-                    "{}\t\tPRESENT\t\t{:?}",
-                    blob_ref,
-                    blob_ref.metadata().unwrap()
-                ),
-                true => println!("{}\t\tPRESENT", blob_ref),
-                false => println!("{}\t\tMISSING", blob_ref),
-            }
-        }
+        check_blobs(hashes, show_metadata);
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("delete") {
-        for hash in clap_matches.values_of("refs").unwrap() {
-            let blob_ref = match BlobRef::new(&hash) {
-                Ok(blob_ref) if !blob_ref.exists() => {
-                    println!("{}\t\tMISSING", blob_ref);
-                    continue;
-                }
-                Ok(blob_ref) => blob_ref,
-                Err(_) => {
-                    eprintln!("{}\t\tINVALID", &hash);
-                    continue;
-                }
-            };
+        let hashes = clap_matches.values_of("refs").unwrap();
+        let interactive = clap_matches.is_present("interactive");
 
-            if clap_matches.is_present("interactive") {
-                let mut confirm = String::new();
-                print!("Do you want to delete {}? [y/n]: ", blob_ref);
-                io::stdout().flush().unwrap();
-                io::stdin().read_line(&mut confirm).unwrap();
-
-                if confirm.trim().to_ascii_lowercase() != "y" {
-                    continue;
-                }
-            };
-
-            match blob_ref.delete() {
-                Ok(_) => println!("{}\t\tDELETED", blob_ref),
-                Err(_) => eprintln!("{}\t\tERROR", blob_ref),
-            }
-        }
+        delete_blobs(hashes, interactive);
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
