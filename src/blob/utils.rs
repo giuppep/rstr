@@ -21,9 +21,9 @@ fn add_file(path: &Path, verbose: bool) -> Result<BlobRef> {
     let blob_ref = BlobRef::from_path(path)?;
     if !blob_ref.exists() {
         let save_path = &blob_ref.to_path();
-        fs::create_dir_all(save_path).map_err(Error::Io)?;
+        fs::create_dir_all(save_path)?;
         let filename = path.file_name().unwrap();
-        fs::copy(path, save_path.join(&filename)).map_err(Error::Io)?;
+        fs::copy(path, save_path.join(&filename))?;
     }
     if verbose {
         println!("{}\t{}", blob_ref.reference(), path.to_str().unwrap());
