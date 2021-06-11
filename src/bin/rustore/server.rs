@@ -1,12 +1,14 @@
 use actix_multipart::Multipart;
+use actix_service::Service;
 use actix_web::middleware::Logger;
 use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Responder};
 use env_logger::Env;
+use futures::future::{ok, Either};
 use futures::{StreamExt, TryStreamExt};
 use log;
 use rustore::blob::BlobRef;
 use sha2::Digest;
-use std::io::Write;
+use std::io::{prelude::*, Write};
 use std::path::PathBuf;
 use tempfile::NamedTempFile;
 
@@ -123,6 +125,18 @@ fn init_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(delete_blob);
 }
 
+fn validate_token(token: &str) -> bool {
+    // TODO: handle errors
+    let file = std::fs::File::open("/tmp/rustore/.tokens").unwrap();
+    let reader = std::io::BufReader::new(file);
+    for line in reader.lines() {
+        if token == line.unwrap() {
+            return true;
+        }
+    }
+    false
+}
+
 #[actix_web::main]
 pub async fn start_server(config: Config) -> std::io::Result<()> {
     std::env::set_var(
@@ -136,6 +150,19 @@ pub async fn start_server(config: Config) -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
+            .wrap_fn(|req, srv| {
+                let auth_token = req.headers().get("X-Auth-Token");
+                match auth_token {
+                    Some(auth_token) if validate_token(auth_token.to_str().unwrap()) => {
+                        return Either::Left(srv.call(req))
+                    }
+                    _ => {
+                        return Either::Right(ok(
+                            req.into_response(HttpResponse::Unauthorized().finish())
+                        ))
+                    }
+                };
+            })
             .configure(init_routes)
             .wrap(Logger::new("%r %s %b bytes %D msecs"))
     })
