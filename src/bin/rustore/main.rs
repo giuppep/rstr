@@ -1,10 +1,11 @@
 use std::{io, io::Write, path::PathBuf};
 mod cli;
+mod security;
 mod server;
 use clap::value_t_or_exit;
 use cli::app;
 use rustore::blob::{self, BlobRef};
-use uuid::Uuid;
+use security::{generate_token, save_token};
 fn delete_blobs<'a, I>(hashes: I, interactive: bool)
 where
     I: Iterator<Item = &'a str>,
@@ -65,21 +66,6 @@ where
     }
 }
 
-fn generate_token(data_store_path: PathBuf) -> String {
-    let token = Uuid::new_v4()
-        .to_simple()
-        .encode_upper(&mut Uuid::encode_buffer())
-        .to_string();
-    let mut file = std::fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(data_store_path.join(".tokens"))
-        .expect("Can't open file.");
-    writeln!(&mut file, "{}", token).unwrap();
-
-    token
-}
-
 fn main() {
     let clap_matches = app().get_matches();
 
@@ -121,7 +107,8 @@ fn main() {
         }
 
         if let Some(_) = clap_matches.subcommand_matches("generate-token") {
-            let token = generate_token(PathBuf::from(data_store_path));
+            let token = generate_token();
+            save_token(&token, PathBuf::from(data_store_path).join(".tokens"));
             println!("{}", token)
         }
     }
