@@ -4,7 +4,7 @@ mod server;
 use clap::value_t_or_exit;
 use cli::app;
 use rustore::blob::{self, BlobRef};
-
+use uuid::Uuid;
 fn delete_blobs<'a, I>(hashes: I, interactive: bool)
 where
     I: Iterator<Item = &'a str>,
@@ -65,6 +65,21 @@ where
     }
 }
 
+fn generate_token(data_store_path: PathBuf) -> String {
+    let token = Uuid::new_v4()
+        .to_simple()
+        .encode_upper(&mut Uuid::encode_buffer())
+        .to_string();
+    let mut file = std::fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(data_store_path.join(".tokens"))
+        .expect("Can't open file.");
+    writeln!(&mut file, "{}", token).unwrap();
+
+    token
+}
+
 fn main() {
     let clap_matches = app().get_matches();
 
@@ -95,12 +110,19 @@ fn main() {
         delete_blobs(hashes, interactive);
     }
 
-    if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
-        let port = value_t_or_exit!(clap_matches.value_of("port"), u16);
-        let log_level = value_t_or_exit!(clap_matches.value_of("log_level"), log::Level);
-        let tmp_folder = value_t_or_exit!(clap_matches.value_of("tmp_folder"), PathBuf);
+    if let Some(clap_matches) = clap_matches.subcommand_matches("server") {
+        if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
+            let port = value_t_or_exit!(clap_matches.value_of("port"), u16);
+            let log_level = value_t_or_exit!(clap_matches.value_of("log_level"), log::Level);
+            let tmp_folder = value_t_or_exit!(clap_matches.value_of("tmp_folder"), PathBuf);
 
-        let config = server::Config::new(port, log_level, tmp_folder);
-        server::start_server(config).unwrap()
+            let config = server::Config::new(port, log_level, tmp_folder);
+            server::start_server(config).unwrap()
+        }
+
+        if let Some(_) = clap_matches.subcommand_matches("generate-token") {
+            let token = generate_token(PathBuf::from(data_store_path));
+            println!("{}", token)
+        }
     }
 }
