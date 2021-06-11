@@ -5,7 +5,7 @@ mod server;
 use clap::value_t_or_exit;
 use cli::app;
 use rustore::blob::{self, BlobRef};
-use security::{generate_token, save_token};
+use security::generate_token;
 fn delete_blobs<'a, I>(hashes: I, interactive: bool)
 where
     I: Iterator<Item = &'a str>,
@@ -108,7 +108,6 @@ fn main() {
 
         if let Some(_) = clap_matches.subcommand_matches("generate-token") {
             let token = generate_token();
-            save_token(&token, PathBuf::from(data_store_path).join(".tokens"));
             println!("{}", token)
         }
     }
