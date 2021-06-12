@@ -1,69 +1,8 @@
 use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 
-pub fn app() -> App<'static, 'static> {
-    let app = App::new("rustore")
-        .version(crate_version!())
-        .author(crate_authors!())
-        .about("Simple content addressable blob store")
-        .global_setting(AppSettings::ArgRequiredElseHelp)
-        .arg(
-            Arg::with_name("data_store_path")
-                .env("RUSTORE_DATA_PATH")
-                .long("data-store")
-                .short("d")
-                .value_name("PATH")
-                .required(true)
-                .help("Where rustore saves the blobs"),
-        )
-        .subcommand(
-            SubCommand::with_name("add")
-                .about("Adds a new file/directory to the blob store.")
-                .arg(
-                    Arg::with_name("files")
-                        .required(true)
-                        .index(1)
-                        .multiple(true)
-                        .value_name("PATH")
-                        .help("Path to the file/directory to add"),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name("delete")
-                .about("Adds a new file to the blob store.")
-                .arg(
-                    Arg::with_name("refs")
-                        .required(true)
-                        .index(1)
-                        .value_name("REF")
-                        .multiple(true)
-                        .help("The reference of the blobs to delete"),
-                )
-                .arg(
-                    Arg::with_name("interactive")
-                        .required(false)
-                        .takes_value(false)
-                        .short("I")
-                        .help("Ask for confirmation before deleting each blob."),
-                ),
-        )
-        .subcommand(
-            SubCommand::with_name("check")
-                .about("Given a list of refs, checks if they are present in the blob store.")
-                .arg(
-                    Arg::with_name("refs")
-                        .required(true)
-                        .index(1)
-                        .value_name("REF")
-                        .multiple(true)
-                        .help("The reference of the blobs to check"),
-                )
-                .arg(
-                    Arg::with_name("metadata")
-                        .long("metadata")
-                        .required(false)
-                        .help("Prints the blob's metadata"),
-                ),
-        )
+fn server_commands() -> App<'static, 'static> {
+    SubCommand::with_name("server")
+        .setting(AppSettings::SubcommandRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("start")
                 .about("Starts the blob store server")
@@ -96,6 +35,76 @@ pub fn app() -> App<'static, 'static> {
                         .default_value("/tmp/.rustore/")
                         .help("Path to a tmp folder for rustore"),
                 ),
-        );
+        )
+        .subcommand(SubCommand::with_name("generate-token").about("Generate an API Token."))
+}
+pub fn app() -> App<'static, 'static> {
+    let app = App::new("rustore")
+        .version(crate_version!())
+        .author(crate_authors!())
+        .about("Simple content addressable blob store")
+        .setting(AppSettings::SubcommandRequiredElseHelp)
+        .arg(
+            Arg::with_name("data_store_path")
+                .env("RUSTORE_DATA_PATH")
+                .long("data-store")
+                .short("d")
+                .value_name("PATH")
+                .required(true)
+                .help("Where rustore saves the blobs"),
+        )
+        .subcommand(
+            SubCommand::with_name("add")
+                .setting(AppSettings::ArgRequiredElseHelp)
+                .about("Adds a new file/directory to the blob store.")
+                .arg(
+                    Arg::with_name("files")
+                        .required(true)
+                        .index(1)
+                        .multiple(true)
+                        .value_name("PATH")
+                        .help("Path to the file/directory to add"),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("delete")
+                .setting(AppSettings::ArgRequiredElseHelp)
+                .about("Adds a new file to the blob store.")
+                .arg(
+                    Arg::with_name("refs")
+                        .required(true)
+                        .index(1)
+                        .value_name("REF")
+                        .multiple(true)
+                        .help("The reference of the blobs to delete"),
+                )
+                .arg(
+                    Arg::with_name("interactive")
+                        .required(false)
+                        .takes_value(false)
+                        .short("I")
+                        .help("Ask for confirmation before deleting each blob."),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("check")
+                .setting(AppSettings::ArgRequiredElseHelp)
+                .about("Given a list of refs, checks if they are present in the blob store.")
+                .arg(
+                    Arg::with_name("refs")
+                        .required(true)
+                        .index(1)
+                        .value_name("REF")
+                        .multiple(true)
+                        .help("The reference of the blobs to check"),
+                )
+                .arg(
+                    Arg::with_name("metadata")
+                        .long("metadata")
+                        .required(false)
+                        .help("Prints the blob's metadata"),
+                ),
+        )
+        .subcommand(server_commands());
     app
 }

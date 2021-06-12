@@ -1,10 +1,11 @@
 use std::{io, io::Write, path::PathBuf};
 mod cli;
+mod security;
 mod server;
 use clap::value_t_or_exit;
 use cli::app;
 use rustore::blob::{self, BlobRef};
-
+use security::generate_token;
 fn delete_blobs<'a, I>(hashes: I, interactive: bool)
 where
     I: Iterator<Item = &'a str>,
@@ -95,12 +96,19 @@ fn main() {
         delete_blobs(hashes, interactive);
     }
 
-    if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
-        let port = value_t_or_exit!(clap_matches.value_of("port"), u16);
-        let log_level = value_t_or_exit!(clap_matches.value_of("log_level"), log::Level);
-        let tmp_folder = value_t_or_exit!(clap_matches.value_of("tmp_folder"), PathBuf);
+    if let Some(clap_matches) = clap_matches.subcommand_matches("server") {
+        if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
+            let port = value_t_or_exit!(clap_matches.value_of("port"), u16);
+            let log_level = value_t_or_exit!(clap_matches.value_of("log_level"), log::Level);
+            let tmp_folder = value_t_or_exit!(clap_matches.value_of("tmp_folder"), PathBuf);
 
-        let config = server::Config::new(port, log_level, tmp_folder);
-        server::start_server(config).unwrap()
+            let config = server::Config::new(port, log_level, tmp_folder);
+            server::start_server(config).unwrap()
+        }
+
+        if let Some(_) = clap_matches.subcommand_matches("generate-token") {
+            let token = generate_token();
+            println!("{}", token)
+        }
     }
 }
