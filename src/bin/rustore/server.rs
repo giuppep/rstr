@@ -1,9 +1,11 @@
+use crate::security::validate_token;
 use actix_multipart::Multipart;
+use actix_service::Service;
 use actix_web::middleware::Logger;
 use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Responder};
 use env_logger::Env;
+use futures::future::{ok, Either};
 use futures::{StreamExt, TryStreamExt};
-use log;
 use rustore::blob::BlobRef;
 use sha2::Digest;
 use std::io::Write;
@@ -136,6 +138,19 @@ pub async fn start_server(config: Config) -> std::io::Result<()> {
 
     HttpServer::new(|| {
         App::new()
+            .wrap_fn(|req, srv| {
+                let auth_token = req.headers().get("X-Auth-Token");
+                match auth_token {
+                    Some(auth_token) if validate_token(auth_token.to_str().unwrap()) => {
+                        return Either::Left(srv.call(req))
+                    }
+                    _ => {
+                        return Either::Right(ok(
+                            req.into_response(HttpResponse::Unauthorized().finish())
+                        ))
+                    }
+                };
+            })
             .configure(init_routes)
             .wrap(Logger::new("%r %s %b bytes %D msecs"))
     })
