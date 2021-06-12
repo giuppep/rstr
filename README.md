@@ -56,26 +56,44 @@ rustore delete f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de
 ```
 Note that you can delete multiple blobs by passing multiple references.
 
+### Web Server
 
 #### Start the web server
 To start the web server run
 ```bash
-rustore start
+rustore server start
 ```
 You can specify a port to run on with `--port $PORT_NUMBER`; it defaults to port `3123`.
 
-### Web Server
 
+#### Authentication
+
+The API uses a pre-shared token for authentication. To generate a new token
+```bash
+rustore server generate-token
+```
+
+The token will look something like
+```
+CEBC4050F9894622B651D73AAC34E5B
+```
+
+Every request to the API must set the `X-Auth-Token` header for authorization.
+
+If the `X-Auth-Token` is not set or does not match a valid token, a `401` status code is
+returned.
 #### Check status
 ```http
 GET /status HTTP/1.1
+X-Auth-Token: <your-token>
 ```
 Check if the server is running
 
 `curl` example:
 
 ```bash
-curl -i -X GET http://my-rustore-url.rs/status
+curl -i -X GET http://my-rustore-url.rs/status \
+-H "X-Auth-Token: $TOKEN"
 ```
 
 example response
@@ -98,6 +116,7 @@ Upload one or more files to the blob store.
 
 ```bash
 curl -i -X POST http://my-rustore-url.rs/blobs \
+-H "X-Auth-Token: $TOKEN" \
 -F file=@path/to/a/file.pdf \
 -F file=@path/to/anoter/file.txt
 ```
@@ -122,7 +141,8 @@ GET /blobs/{id} HTTP/1.1
 `curl` example
 
 ```bash
-curl -i -X GET http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de
+curl -i -X GET http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
+-H "X-Auth-Token: $TOKEN"
 ```
 
 example response
@@ -147,7 +167,8 @@ Retrieve just the blob's metadata.
 `curl` example
 
 ```bash
-curl -I -X GET http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de
+curl -I -X HEAD http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
+-H "X-Auth-Token: $TOKEN"
 ```
 
 example response
@@ -170,7 +191,8 @@ DELETE /blobs/{id} HTTP/1.1
 `curl` example
 
 ```bash
-curl -i -X DELETE http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de
+curl -i -X DELETE http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
+-H "X-Auth-Token: $TOKEN"
 ```
 
 example response
