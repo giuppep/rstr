@@ -92,6 +92,10 @@ impl BlobRef {
     /// ```
     /// Note that this *does not* add the file to the blob store, the user will have to
     /// manually save it to `blob_ref.to_path()`.
+    ///
+    /// # Errors
+    ///
+    /// See [`std::fs::File::open`] and [`io::copy`]
     pub fn from_path(path: &Path) -> Result<BlobRef> {
         let mut file = File::open(path)?;
         let mut hasher = BlobRef::hasher();
@@ -149,7 +153,11 @@ impl BlobRef {
         dir.exists() && dir.read_dir().unwrap().next().is_some()
     }
 
-    /// Deletes the file referenced by the BlobRef.
+    /// Deletes the file referenced by the `BlobRef`.
+    ///
+    /// # Errors
+    ///
+    /// See [`fs::remove_dir_all`].
     pub fn delete(&self) -> Result<()> {
         Ok(fs::remove_dir_all(self.to_path())?)
     }
@@ -172,19 +180,32 @@ impl BlobRef {
     /// Returns the mime type inferred from the file's magic number as a string.
     /// It defaults to "application/octet-stream" if it cannot determine the type.
     /// We use the [`infer`] crate to infer the mime type.
+    ///
+    /// # Errors
+    ///
+    /// It will return an error if the file cannot be read or the mime type cannot be inferred.
     pub fn mime(&self) -> Result<&str> {
         match infer::get_from_path(self.file_path()?)? {
             Some(mime) => Ok(mime.mime_type()),
-            _ => Ok("application/octet-stream"),
+            None => Ok("application/octet-stream"),
         }
     }
 
     /// Get the content of the referenced file as a byte array.
+    ///
+    /// # Errors
+    ///
+    /// It wil return an error if the file is not present or cannot be read.
     pub fn content(&self) -> Result<Vec<u8>> {
         Ok(fs::read(&self.file_path()?)?)
     }
 
     /// Returns some metadata for the file referenced to.
+    ///
+    /// # Errors
+    ///
+    /// Will return an error if the file cannot be found/opened or if [`std::fs::metadata`]
+    /// errors.
     pub fn metadata(&self) -> Result<BlobMetadata> {
         let file_path = self.file_path()?;
         let filename = file_path.file_name().unwrap().to_str().unwrap().to_string();
@@ -194,7 +215,7 @@ impl BlobRef {
             mime_type: String::from(self.mime()?),
             filename,
             size: metadata.len(),
-            created: metadata.created().unwrap().into(),
+            created: metadata.created()?.into(),
         })
     }
 

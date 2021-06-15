@@ -40,22 +40,23 @@ where
     I: Iterator<Item = &'a str>,
 {
     for hash in hashes {
-        let blob_ref = match BlobRef::new(&hash) {
-            Ok(blob_ref) => blob_ref,
-            Err(_) => {
-                eprintln!("{}\t\tINVALID", &hash);
-                continue;
-            }
+        let blob_ref = if let Ok(blob_ref) = BlobRef::new(&hash) {
+            blob_ref
+        } else {
+            eprintln!("{}\t\tINVALID", &hash);
+            continue;
         };
 
-        match blob_ref.exists() {
-            true if show_metadata => println!(
+        if !blob_ref.exists() {
+            println!("{}\t\tMISSING", blob_ref)
+        } else if show_metadata {
+            println!(
                 "{}\t\tPRESENT\t\t{:?}",
                 blob_ref,
                 blob_ref.metadata().unwrap()
-            ),
-            true => println!("{}\t\tPRESENT", blob_ref),
-            false => println!("{}\t\tMISSING", blob_ref),
+            )
+        } else {
+            println!("{}\t\tPRESENT", blob_ref)
         }
     }
 }

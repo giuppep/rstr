@@ -22,7 +22,7 @@ fn main() {
             .into_iter()
             .map(PathBuf::from)
             .collect();
-        blob::add_files(&input_paths[..], true).unwrap();
+        blob::add_files(&input_paths[..], true);
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("check") {
@@ -49,7 +49,7 @@ fn main() {
             server::start_server(config).unwrap()
         }
 
-        if let Some(_) = clap_matches.subcommand_matches("generate-token") {
+        if clap_matches.subcommand_matches("generate-token").is_some() {
             let token = generate_token();
             println!("{}", token)
         }

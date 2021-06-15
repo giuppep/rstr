@@ -29,11 +29,6 @@ repos:
           cargo clippy
             --all-targets
             --all-features
-            --
-            --forbid warnings
-            --forbid clippy::all
-            --forbid clippy::pedantic
-            --forbid clippy::cargo
 
       - id: test
         name: test
