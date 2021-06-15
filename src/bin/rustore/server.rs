@@ -114,7 +114,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         log::info!("{} has been created", blob_ref);
         blobs.push(blob_ref)
     }
-    let hashes: Vec<&str> = blobs.iter().map(|b| b.reference()).collect();
+    let hashes: Vec<&str> = blobs.iter().map(BlobRef::reference).collect();
     HttpResponse::Ok().json(hashes)
 }
 
@@ -142,14 +142,12 @@ pub async fn start_server(config: Config) -> std::io::Result<()> {
                 let auth_token = req.headers().get("X-Auth-Token");
                 match auth_token {
                     Some(auth_token) if validate_token(auth_token.to_str().unwrap()) => {
-                        return Either::Left(srv.call(req))
+                        Either::Left(srv.call(req))
                     }
                     _ => {
-                        return Either::Right(ok(
-                            req.into_response(HttpResponse::Unauthorized().finish())
-                        ))
+                        Either::Right(ok(req.into_response(HttpResponse::Unauthorized().finish())))
                     }
-                };
+                }
             })
             .configure(init_routes)
             .wrap(Logger::new("%r %s %b bytes %D msecs"))

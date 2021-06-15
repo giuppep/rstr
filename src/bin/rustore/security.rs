@@ -13,10 +13,10 @@ fn token_store_path() -> PathBuf {
 
 /// Generates a new API token and appends it to the list of valid tokens.
 pub fn generate_token() -> String {
-    let token = Uuid::new_v4()
+    let token = (*Uuid::new_v4()
         .to_simple()
-        .encode_upper(&mut Uuid::encode_buffer())
-        .to_string();
+        .encode_upper(&mut Uuid::encode_buffer()))
+    .to_string();
     save_token(&token);
     token
 }
