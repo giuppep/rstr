@@ -64,6 +64,21 @@ pub fn app() -> App<'static, 'static> {
                         .multiple(true)
                         .value_name("PATH")
                         .help("Path to the file/directory to add"),
+                )
+                .arg(
+                    Arg::with_name("threads")
+                        .long("threads")
+                        .required(false)
+                        .value_name("NUM_THREADS")
+                        .default_value("16")
+                        .help("Number of threads to use when importing files."),
+                )
+                .arg(
+                    Arg::with_name("verbose")
+                        .short("v")
+                        .long("verbose")
+                        .required(false)
+                        .help("Print details about the process."),
                 ),
         )
         .subcommand(
