@@ -85,7 +85,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
                     .unwrap();
             }
         }
-        let blob_ref = BlobRef::from_hasher(hasher);
+        let blob_ref = BlobRef::from(hasher);
 
         let save_path = blob_ref.to_path();
         web::block(move || {

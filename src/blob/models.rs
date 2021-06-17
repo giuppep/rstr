@@ -26,6 +26,24 @@ pub struct BlobMetadata {
     pub created: DateTime<Utc>,
 }
 
+/// Returns a `BlobRef` instance from a hasher
+///
+/// # Examples
+///
+/// ```
+/// # use sha2::{Digest, Sha256};
+/// # use rustore::blob::BlobRef;
+/// let mut hasher = Sha256::new();
+/// hasher.update(b"hello world");
+/// let blob_ref = BlobRef::from(hasher);
+/// assert_eq!(blob_ref.reference(), "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
+/// ```
+impl From<Sha256> for BlobRef {
+    fn from(hasher: Sha256) -> Self {
+        BlobRef::new(&format!("{:x}", hasher.finalize())[..]).unwrap()
+    }
+}
+
 impl BlobRef {
     /// Creates a new `BlobRef` from a valid hex representation of the sha256 hash.
     ///
@@ -62,22 +80,6 @@ impl BlobRef {
         }
     }
 
-    /// Returns a `BlobRef` instance from a hasher
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use sha2::{Digest, Sha256};
-    /// # use rustore::blob::BlobRef;
-    /// let mut hasher = Sha256::new();
-    /// hasher.update(b"hello world");
-    /// let blob_ref = BlobRef::from_hasher(hasher);
-    /// assert_eq!(blob_ref.reference(), "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
-    /// ```
-    pub fn from_hasher(hasher: Sha256) -> BlobRef {
-        BlobRef::new(&format!("{:x}", hasher.finalize())[..]).unwrap()
-    }
-
     /// Creates a `BlobRef` from a document on disk.
     ///
     /// # Examples
@@ -101,7 +103,7 @@ impl BlobRef {
         let mut hasher = BlobRef::hasher();
 
         io::copy(&mut file, &mut hasher)?;
-        Ok(BlobRef::from_hasher(hasher))
+        Ok(BlobRef::from(hasher))
     }
 
     /// Returns an instance of the hasher used to compute the blob reference for a file
