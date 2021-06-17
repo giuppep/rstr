@@ -139,14 +139,12 @@ impl BlobRef {
     /// This function assumes that the `RUSTORE_DATA_PATH` environment variable has been
     /// set to a valid path and panics otherwise.
     pub fn to_path(&self) -> PathBuf {
-        let base_path = env::var("RUSTORE_DATA_PATH").unwrap();
-        let path = Path::new(&base_path)
+        let base_path: PathBuf = env::var("RUSTORE_DATA_PATH").unwrap().into();
+        base_path
             .join(&self.value[0..2])
             .join(&self.value[2..4])
             .join(&self.value[4..6])
-            .join(&self.value[6..]);
-
-        path
+            .join(&self.value[6..])
     }
 
     /// Returns `true` if there is a file associated with the reference is in the blob store
