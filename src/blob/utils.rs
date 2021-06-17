@@ -1,19 +1,13 @@
 use crate::blob::{BlobRef, Error, Result};
 use ignore::{WalkBuilder, WalkState};
-use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
-use rayon::prelude::*;
+use indicatif::{ProgressBar, ProgressStyle};
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::mpsc;
-use std::{fs, io};
+use std::{fs, io, thread};
 
 /// Function to add a file from disk to the blob store
-///
-/// If verbose is `true` it prints to stdout the reference for the file and it's original path.
-/// ```text
-/// f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de        test/test_file.txt
-/// ```
-fn add_file(path: &Path, verbose: bool) -> Result<BlobRef> {
+fn add_file(path: &Path) -> Result<BlobRef> {
     if !path.is_file() {
         return Err(Error::Io(io::Error::from(io::ErrorKind::InvalidInput)));
     }
@@ -25,9 +19,7 @@ fn add_file(path: &Path, verbose: bool) -> Result<BlobRef> {
         let filename = path.file_name().unwrap();
         fs::copy(path, save_path.join(&filename))?;
     }
-    if verbose {
-        println!("{}\t{}", blob_ref.reference(), path.to_str().unwrap());
-    }
+
     Ok(blob_ref)
 }
 
@@ -80,30 +72,52 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
 /// # use std::path::PathBuf;
 /// # use rustore::blob::add_files;
 /// let paths = [PathBuf::from("/path/to/my/files/")];
-/// let blob_refs = add_files(&paths[..], false);
+/// let threads: u8 = 8;
+/// let blob_refs = add_files(&paths[..], threads, false);
 /// ```
-pub fn add_files(paths: &[PathBuf], verbose: bool) -> Vec<BlobRef> {
-    let paths: Vec<PathBuf> = paths
-        .par_iter()
-        .flat_map(|p| collect_file_paths(p))
-        .collect();
+pub fn add_files(paths: &[PathBuf], threads: u8, verbose: bool) -> Vec<BlobRef> {
+    let paths: Vec<PathBuf> = paths.iter().flat_map(|p| collect_file_paths(p)).collect();
 
-    let pb = ProgressBar::new(paths.len() as u64);
-    pb.set_style(ProgressStyle::default_bar().template(
-        "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})",
-    ));
+    let (tx, rx) = mpsc::channel();
 
-    let (blob_refs, errors): (Vec<_>, Vec<_>) = paths
-        .par_iter()
-        .progress_with(pb)
-        .map(|p| add_file(p, verbose))
-        .partition(Result::is_ok);
+    let chunk_size = (paths.len()) / threads as usize;
+    let chunks = paths.chunks(chunk_size);
 
-    let blob_refs = blob_refs.into_iter().map(Result::unwrap).collect();
-
-    for error in errors {
-        eprintln!("{}", error.unwrap_err().to_string());
+    for chunk in chunks {
+        let tx = tx.clone();
+        let chunk = chunk.to_owned();
+        thread::spawn(move || {
+            for path in chunk {
+                let blob_ref = add_file(&path);
+                tx.send((path, blob_ref)).expect("err")
+            }
+        });
     }
 
+    drop(tx);
+
+    let pb = ProgressBar::new(paths.len() as u64);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})\n{msg}"),
+    );
+
+    let mut blob_refs = vec![];
+    for (path, blob_ref) in rx.iter() {
+        if let Ok(blob_ref) = blob_ref {
+            if verbose {
+                pb.println(format!(
+                    "{}\t\t{}",
+                    &blob_ref.reference(),
+                    path.to_string_lossy()
+                ));
+            }
+            blob_refs.push(blob_ref)
+        } else {
+            eprintln!("ERROR\t\t{}", path.to_string_lossy())
+        }
+        pb.inc(1);
+    }
+    pb.finish_with_message(format!("Successfully added {} blobs!", blob_refs.len()));
     blob_refs
 }
