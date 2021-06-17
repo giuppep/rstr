@@ -3,12 +3,8 @@ use std::io::{prelude::*, BufReader};
 use std::path::PathBuf;
 use uuid::Uuid;
 
-const DEFAULT_TOKEN_STORE_PATH: &str = "/tmp/rustore/.tokens";
-
 fn token_store_path() -> PathBuf {
-    std::env::var("RUSTORE_TOKEN_STORE_PATH")
-        .unwrap_or_else(|_| DEFAULT_TOKEN_STORE_PATH.to_string())
-        .into()
+    std::env::var("RUSTORE_TOKEN_STORE_PATH").unwrap().into()
 }
 
 /// Generates a new API token and appends it to the list of valid tokens.

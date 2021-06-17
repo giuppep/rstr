@@ -1,19 +1,26 @@
 mod cli;
 mod security;
 mod server;
+mod settings;
 mod utils;
 use clap::value_t_or_exit;
 use cli::app;
 use rustore::blob;
 use security::generate_token;
+use settings::Settings;
 use std::path::PathBuf;
 use utils::{check_blobs, delete_blobs};
 
 fn main() {
     let clap_matches = app().get_matches();
 
-    let data_store_path = clap_matches.value_of("data_store_path").unwrap();
-    std::env::set_var("RUSTORE_DATA_PATH", data_store_path);
+    let mut settings = Settings::default();
+
+    if let Some(data_store_path) = clap_matches.value_of("data_store_path") {
+        settings.data_store_dir = PathBuf::from(data_store_path);
+    }
+
+    std::env::set_var("RUSTORE_DATA_PATH", &settings.data_store_dir);
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
         let input_paths: Vec<PathBuf> = clap_matches
@@ -44,12 +51,17 @@ fn main() {
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("server") {
         if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
-            let port = value_t_or_exit!(clap_matches.value_of("port"), u16);
-            let log_level = value_t_or_exit!(clap_matches.value_of("log_level"), log::Level);
-            let tmp_folder = value_t_or_exit!(clap_matches.value_of("tmp_folder"), PathBuf);
+            if let Some(port) = clap_matches.value_of("port") {
+                settings.server.port = port.parse().unwrap_or_default()
+            }
+            if let Some(log_level) = clap_matches.value_of("log_level") {
+                settings.server.log_level = log_level.parse().unwrap()
+            }
 
-            let config = server::Config::new(port, log_level, tmp_folder);
-            server::start_server(config).unwrap()
+            if let Some(tmp_directory) = clap_matches.value_of("tmp_directory") {
+                settings.server.tmp_directory = tmp_directory.parse().unwrap()
+            }
+            server::start_server(settings.server).unwrap()
         }
 
         if clap_matches.subcommand_matches("generate-token").is_some() {
