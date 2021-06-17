@@ -12,13 +12,12 @@ fn server_commands() -> App<'static, 'static> {
                         .required(false)
                         .takes_value(true)
                         .value_name("PORT")
-                        .default_value("3123")
+                        .env("RUSTORE_PORT")
                         .help("The port on which to run"),
                 )
                 .arg(
                     Arg::with_name("log_level")
                         .long("log-level")
-                        .required(false)
                         .takes_value(true)
                         .value_name("LEVEL")
                         .env("RUSTORE_LOG_LEVEL")
@@ -26,13 +25,12 @@ fn server_commands() -> App<'static, 'static> {
                         .help("The level of logging"),
                 )
                 .arg(
-                    Arg::with_name("tmp_folder")
-                        .long("tmp-folder")
+                    Arg::with_name("tmp_directory")
+                        .long("tmp-directory")
                         .required(false)
                         .takes_value(true)
                         .value_name("PATH")
-                        .env("RUSTORE_TMP_FOLDER")
-                        .default_value("/tmp/.rustore/")
+                        .env("RUSTORE_TMP_DIRECTORY")
                         .help("Path to a tmp folder for rustore"),
                 ),
         )
@@ -50,7 +48,6 @@ pub fn app() -> App<'static, 'static> {
                 .long("data-store")
                 .short("d")
                 .value_name("PATH")
-                .required(true)
                 .help("Where rustore saves the blobs"),
         )
         .subcommand(

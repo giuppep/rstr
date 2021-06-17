@@ -1,4 +1,5 @@
 use crate::security::validate_token;
+use crate::settings::ServerSettings;
 use actix_multipart::Multipart;
 use actix_service::Service;
 use actix_web::middleware::Logger;
@@ -9,24 +10,7 @@ use futures::{StreamExt, TryStreamExt};
 use rustore::blob::BlobRef;
 use sha2::Digest;
 use std::io::Write;
-use std::path::PathBuf;
 use tempfile::NamedTempFile;
-
-pub struct Config {
-    port: u16,
-    log_level: log::Level,
-    tmp_folder: PathBuf,
-}
-
-impl Config {
-    pub fn new(port: u16, log_level: log::Level, tmp_folder: PathBuf) -> Config {
-        Config {
-            port,
-            log_level,
-            tmp_folder,
-        }
-    }
-}
 
 #[get("/status")]
 async fn app_status() -> impl Responder {
@@ -126,15 +110,15 @@ fn init_routes(cfg: &mut web::ServiceConfig) {
 }
 
 #[actix_web::main]
-pub async fn start_server(config: Config) -> std::io::Result<()> {
+pub async fn start_server(settings: ServerSettings) -> std::io::Result<()> {
     std::env::set_var(
         "RUST_LOG",
-        format!("{},actix_web={}", config.log_level, config.log_level),
+        format!("{},actix_web={}", settings.log_level, settings.log_level),
     );
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    std::env::set_var("RUSTORE_TMP_FOLDER", &config.tmp_folder);
-    std::fs::create_dir_all(&config.tmp_folder).unwrap();
+    settings.set_env_vars();
+    settings.create_dirs();
 
     HttpServer::new(|| {
         App::new()
@@ -152,7 +136,7 @@ pub async fn start_server(config: Config) -> std::io::Result<()> {
             .configure(init_routes)
             .wrap(Logger::new("%r %s %b bytes %D msecs"))
     })
-    .bind(format!("127.0.0.1:{}", config.port.to_string()))?
+    .bind(format!("127.0.0.1:{}", settings.port.to_string()))?
     .run()
     .await
 }
