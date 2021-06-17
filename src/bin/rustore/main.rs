@@ -22,7 +22,10 @@ fn main() {
             .into_iter()
             .map(PathBuf::from)
             .collect();
-        blob::add_files(&input_paths[..], 16, true);
+        let threads = value_t_or_exit!(clap_matches.value_of("threads"), u8);
+        let verbose = clap_matches.is_present("verbose");
+
+        blob::add_files(&input_paths[..], threads, verbose);
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("check") {
