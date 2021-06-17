@@ -22,7 +22,7 @@ fn main() {
             .into_iter()
             .map(PathBuf::from)
             .collect();
-        blob::add_files(&input_paths[..], true);
+        blob::add_files(&input_paths[..], 16, true);
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("check") {
