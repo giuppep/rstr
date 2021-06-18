@@ -80,7 +80,7 @@ pub fn add_files(paths: &[PathBuf], threads: u8, verbose: bool) -> Vec<BlobRef> 
 
     let (tx, rx) = mpsc::channel();
 
-    let chunk_size = (paths.len()) / threads as usize;
+    let chunk_size = std::cmp::max(paths.len() / threads as usize, 1_usize);
     let chunks = paths.chunks(chunk_size);
 
     for chunk in chunks {
