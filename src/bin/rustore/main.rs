@@ -22,6 +22,10 @@ fn main() {
         return;
     }
 
+    // Try loading the configuration from file
+    // - if the path is specified use that
+    // - if the path is not specified look for the config in the default path
+    // If the config cannot be loaded, use the default configuration.
     let mut settings = Settings::from_file(clap_matches.value_of("config").map(PathBuf::from))
         .unwrap_or(Settings::default());
 
