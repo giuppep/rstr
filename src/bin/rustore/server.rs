@@ -36,7 +36,12 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
         Ok(content) => HttpResponse::Ok()
             .content_type(metadata.mime_type)
             .header("filename", metadata.filename)
-            .header("created", metadata.created.to_rfc3339())
+            .header(
+                "created",
+                metadata
+                    .created
+                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, false),
+            )
             .body(content),
         Err(_) => HttpResponse::InternalServerError().body("Cannot open file"),
     }
