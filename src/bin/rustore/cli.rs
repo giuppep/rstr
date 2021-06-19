@@ -3,6 +3,7 @@ use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 fn server_commands() -> App<'static, 'static> {
     SubCommand::with_name("server")
         .setting(AppSettings::SubcommandRequiredElseHelp)
+        .about("Commands for operating the rustore server.")
         .subcommand(
             SubCommand::with_name("start")
                 .about("Starts the blob store server")
@@ -43,12 +44,38 @@ pub fn app() -> App<'static, 'static> {
         .about("Simple content addressable blob store")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg(
+            Arg::with_name("config")
+                .long("config")
+                .short("C")
+                .value_name("PATH")
+                .env("RUSTORE_CONFIG_PATH")
+                .help("Optional path to a config file.")
+                .long_help(
+                    "Optional path to a config file.
+The config file must be in TOML format. A new config file with default configuration can
+be generated with the `generate-config` command.
+If the path to a config file is not specified, the app will attempt to load it from the
+default path and if not present will use the default settings. Any manually specified
+option in the CLI or using environment variables will override what is specified in the config.",
+                ),
+        )
+        .arg(
             Arg::with_name("data_store_path")
                 .env("RUSTORE_DATA_PATH")
                 .long("data-store")
                 .short("d")
                 .value_name("PATH")
-                .help("Where rustore saves the blobs"),
+                .help("Where rustore saves the blobs."),
+        )
+        .subcommand(
+            SubCommand::with_name("create-config")
+                .about("Creates a new configuration file with the default settings.")
+                .arg(
+                    Arg::with_name("path")
+                        .long("path")
+                        .takes_value(true)
+                        .help("Optional path where to store the config file."),
+                ),
         )
         .subcommand(
             SubCommand::with_name("add")

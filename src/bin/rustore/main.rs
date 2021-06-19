@@ -14,13 +14,22 @@ use utils::{check_blobs, delete_blobs};
 fn main() {
     let clap_matches = app().get_matches();
 
-    let mut settings = Settings::default();
-
-    if let Some(data_store_path) = clap_matches.value_of("data_store_path") {
-        settings.data_store_dir = PathBuf::from(data_store_path);
+    if let Some(clap_matches) = clap_matches.subcommand_matches("create-config") {
+        let settings = Settings::default();
+        settings
+            .to_file(clap_matches.value_of("path").map(PathBuf::from))
+            .unwrap();
+        return;
     }
 
-    std::env::set_var("RUSTORE_DATA_PATH", &settings.data_store_dir);
+    let mut settings = Settings::from_file(clap_matches.value_of("config").map(PathBuf::from))
+        .unwrap_or(Settings::default());
+
+    if let Some(data_store_path) = clap_matches.value_of("data_store_path") {
+        settings.data_store_dir = data_store_path.into();
+    }
+
+    settings.set_env_vars();
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
         let input_paths: Vec<PathBuf> = clap_matches
@@ -50,6 +59,8 @@ fn main() {
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("server") {
+        settings.server.set_env_vars();
+
         if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
             if let Some(port) = clap_matches.value_of("port") {
                 settings.server.port = port.parse().unwrap_or_default()
