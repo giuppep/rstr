@@ -26,7 +26,7 @@ Check if the server is running
 `curl` example:
 
 ```bash
-curl -i -X GET http://my-rustore-url.rs/status \
+curl -i -X GET https://my-rustore-url.rs/status \
 -H "X-Auth-Token: $TOKEN"
 ```
 
@@ -49,7 +49,7 @@ Upload one or more files to the blob store.
 `curl` example:
 
 ```bash
-curl -i -X POST http://my-rustore-url.rs/blobs \
+curl -i -X POST https://my-rustore-url.rs/blobs \
 -H "X-Auth-Token: $TOKEN" \
 -F file=@path/to/a/file.pdf \
 -F file=@path/to/anoter/file.txt
@@ -75,7 +75,7 @@ GET /blobs/{id} HTTP/1.1
 `curl` example
 
 ```bash
-curl -i -X GET http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
+curl -i -X GET https://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
 -H "X-Auth-Token: $TOKEN"
 ```
 
@@ -101,7 +101,7 @@ Retrieve just the blob's metadata.
 `curl` example
 
 ```bash
-curl -I -X HEAD http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
+curl -I -X HEAD https://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
 -H "X-Auth-Token: $TOKEN"
 ```
 
@@ -125,7 +125,7 @@ DELETE /blobs/{id} HTTP/1.1
 `curl` example
 
 ```bash
-curl -i -X DELETE http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
+curl -i -X DELETE https://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
 -H "X-Auth-Token: $TOKEN"
 ```
 
