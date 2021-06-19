@@ -10,6 +10,7 @@ use std::{
     path::Path,
     path::PathBuf,
 };
+use tree_magic_mini as magic;
 
 /// Struct representing a reference to an entry in the blob store
 #[derive(Debug, Clone)]
@@ -179,14 +180,14 @@ impl BlobRef {
 
     /// Returns the mime type inferred from the file's magic number as a string.
     /// It defaults to "application/octet-stream" if it cannot determine the type.
-    /// We use the [`infer`] crate to infer the mime type.
+    /// We use the [`tree_magic_mini`] crate to infer the mime type.
     ///
     /// # Errors
     ///
     /// It will return an error if the file cannot be read or the mime type cannot be inferred.
     pub fn mime(&self) -> Result<&str> {
-        match infer::get_from_path(self.file_path()?)? {
-            Some(mime) => Ok(mime.mime_type()),
+        match magic::from_filepath(&self.file_path()?) {
+            Some(mime) => Ok(mime),
             None => Ok("application/octet-stream"),
         }
     }
