@@ -84,7 +84,7 @@ example response
 ```http
 HTTP/1.1 200 OK
 content-length: 20
-content-type: application/octet-stream
+content-type: text/plain
 created: 2021-06-09T19:29:05.856119481+00:00
 filename: test_file.txt
 date: Wed, 09 Jun 2021 19:31:32 GMT
@@ -110,7 +110,7 @@ example response
 ```http
 HTTP/1.1 200 OK
 content-length: 20
-content-type: application/octet-stream
+content-type: text/plain
 created: 2021-06-09T19:29:05.856119481+00:00
 filename: test_file.txt
 date: Wed, 09 Jun 2021 19:31:32 GMT
