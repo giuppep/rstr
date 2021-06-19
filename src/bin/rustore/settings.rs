@@ -37,7 +37,7 @@ impl Default for ServerSettings {
         ServerSettings {
             port: 3123,
             log_level: log::Level::Info,
-            tmp_directory: std::env::temp_dir(),
+            tmp_directory: std::env::temp_dir().join("rustore"),
             token_store_path,
         }
     }
