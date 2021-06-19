@@ -37,7 +37,7 @@ Copy the token to the client machine and save it into an environment variable: `
 To add a file, simply send a `POST` request to the `/blobs` endpoint:
 
 ```bash
-curl -i -X POST http://my-rustore-url.rs/blobs \
+curl -i -X POST https://my-rustore-url.rs/blobs \
 -H "X-Auth-Token: $TOKEN" \
 -F file=@path/to/a/file.pdf
 ```
@@ -55,7 +55,7 @@ date: Sat, 19 Jun 2021 22:43:01 GMT
 
 The hash can then be used to retrieve the file
 ```bash
-curl -O http://my-rustore-url.rs/blobs/c1d18efa9781db45217d594b75e31801318fd1834358c081487fb716ac8139ef \
+curl -O https://my-rustore-url.rs/blobs/c1d18efa9781db45217d594b75e31801318fd1834358c081487fb716ac8139ef \
 -H "X-Auth-Token: $TOKEN"
 ```
 
