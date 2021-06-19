@@ -1,27 +1,67 @@
 # rustore
 A simple content-addressable blob-store written in [`rust`](https://www.rust-lang.org/).
 
-After uploading a file to the blob store you will receive a unique reference to it (it's
+After uploading a file to the blob store you will receive a unique reference to it (its
 `sha256` hash) which can be used to retrieve/delete it.
 ## Features
 
 - A simple CLI interface for adding/checking/deleting blobs from the blob store
 - A web server with a REST API for interacting with your blobs remotely.
+
 ## Installation
 
 TODO
 ## Usage
 
 `rustore` provides both a CLI and a web server with a REST API to upload/get/delete blobs.
-The blobs are stored in the path specified by the variable `RUSTORE_DATA_PATH`
+
+See the [next section](#configuration) for details on how to configure the app.
+### Web Server
+
+To start the web server run
+```bash
+rustore server start
+```
+You can specify a port to run on with `--port $PORT_NUMBER`; it defaults to port `3123`.
+
+See the full [API Documentation](api.md) for more details.
+
+#### Example
+
+First of all, you'll neet to generate a token for authentication by running
+```bash
+rustore generate-token
+```
+Copy the token to the client machine and save it into an environment variable: `export TOKEN=<my_token>`.
+
+To add a file, simply send a `POST` request to the `/blobs` endpoint:
 
 ```bash
-export RUSTORE_DATA_PATH="/path/to/data/store"
+curl -i -X POST http://my-rustore-url.rs/blobs \
+-H "X-Auth-Token: $TOKEN" \
+-F file=@path/to/a/file.pdf
 ```
 
-The path can also be specified by appending the option `--data-store /path/to/data/store`
-to any command. In the examples below we assume that this was set in the env variable.
+If the upload is successful, you will receive the hash of the file in the response:
+
+```http
+HTTP/1.1 200 OK
+content-length: 68
+content-type: application/json
+date: Sat, 19 Jun 2021 22:43:01 GMT
+
+["c1d18efa9781db45217d594b75e31801318fd1834358c081487fb716ac8139ef"]%
+```
+
+The hash can then be used to retrieve the file
+```bash
+curl -O http://my-rustore-url.rs/blobs/c1d18efa9781db45217d594b75e31801318fd1834358c081487fb716ac8139ef \
+-H "X-Auth-Token: $TOKEN"
+```
+
 ### CLI
+
+We provide a series of utility commands to interact with the blob store directly on the server.
 #### Add files
 You can add files by passing a list of paths to `rustore add`:
 ```bash
@@ -56,151 +96,27 @@ rustore delete f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de
 ```
 Note that you can delete multiple blobs by passing multiple references.
 
-### Web Server
+## Configuration
 
-#### Start the web server
-To start the web server run
+The app can be configured either using the various CLI flags (see `rustore --help` for details) or using a `TOML` file. You can generate a default config file with the command
 ```bash
-rustore server start
-```
-You can specify a port to run on with `--port $PORT_NUMBER`; it defaults to port `3123`.
-
-
-#### Authentication
-
-The API uses a pre-shared token for authentication. To generate a new token
-```bash
-rustore server generate-token
+rustore create-config
 ```
 
-The token will look something like
-```
-CEBC4050F9894622B651D73AAC34E5B
-```
+When starting, the app will try to load the config file. If this is not present or cannot be parsed correctly, it will default to the default settings.
 
-Every request to the API must set the `X-Auth-Token` header for authorization.
+Any setting specified via CLI flags or environment variables will override the configuration.
 
-If the `X-Auth-Token` is not set or does not match a valid token, a `401` status code is
-returned.
-#### Check status
-```http
-GET /status HTTP/1.1
-X-Auth-Token: <your-token>
-```
-Check if the server is running
+### Example configuration
 
-`curl` example:
+```toml
+data_store_dir = "/home/giuppep/.local/share/rustore/"
 
-```bash
-curl -i -X GET http://my-rustore-url.rs/status \
--H "X-Auth-Token: $TOKEN"
-```
-
-example response
-
-```http
-HTTP/1.1 200 OK
-content-length: 0
-date: Wed, 09 Jun 2021 19:35:31 GMT
-```
-
-#### Upload files
-
-```http
-POST /blobs HTTP/1.1
-```
-
-Upload one or more files to the blob store.
-
-`curl` example:
-
-```bash
-curl -i -X POST http://my-rustore-url.rs/blobs \
--H "X-Auth-Token: $TOKEN" \
--F file=@path/to/a/file.pdf \
--F file=@path/to/anoter/file.txt
-```
-
-example response
-
-```http
-HTTP/1.1 200 OK
-content-length: 135
-content-type: application/json
-date: Wed, 09 Jun 2021 19:29:05 GMT
-
-["f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de","abe9fcbe841523a897016e7cd17e979a451ea581aece3ed4126cebc871e5206a"]%
-```
-
-#### Get blob (and/or metadata)
-
-```http
-GET /blobs/{id} HTTP/1.1
-```
-
-`curl` example
-
-```bash
-curl -i -X GET http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
--H "X-Auth-Token: $TOKEN"
-```
-
-example response
-
-```http
-HTTP/1.1 200 OK
-content-length: 20
-content-type: application/octet-stream
-created: 2021-06-09T19:29:05.856119481+00:00
-filename: test_file.txt
-date: Wed, 09 Jun 2021 19:31:32 GMT
-
-<FILE BYTES>
-```
-
-```http
-HEAD /blobs/{id} HTTP/1.1
-```
-
-Retrieve just the blob's metadata.
-
-`curl` example
-
-```bash
-curl -I -X HEAD http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
--H "X-Auth-Token: $TOKEN"
-```
-
-example response
-
-```http
-HTTP/1.1 200 OK
-content-length: 20
-content-type: application/octet-stream
-created: 2021-06-09T19:29:05.856119481+00:00
-filename: test_file.txt
-date: Wed, 09 Jun 2021 19:31:32 GMT
-```
-
-#### Delete blob
-
-```http
-DELETE /blobs/{id} HTTP/1.1
-```
-
-`curl` example
-
-```bash
-curl -i -X DELETE http://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de \
--H "X-Auth-Token: $TOKEN"
-```
-
-example response
-
-```http
-HTTP/1.1 200 OK
-content-length: 0
-date: Wed, 09 Jun 2021 19:34:16 GMT
+[server]
+port = 3123
+log_level = "INFO"
+tmp_directory = "/tmp/rustore/"
+token_store_path = "/home/giuppep/.config/rustore/.tokens"
 ```
 
 ## License
