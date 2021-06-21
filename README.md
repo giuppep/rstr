@@ -26,6 +26,8 @@ You can specify a port to run on with `--port $PORT_NUMBER`; it defaults to port
 
 See the full [API Documentation](api.md) for more details.
 
+A complete `Python` API client is available [here](https://github.com/giuppep/rustore-client).
+
 #### Example
 
 First of all, you'll neet to generate a token for authentication by running
