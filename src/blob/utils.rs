@@ -75,7 +75,7 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
 /// let threads: u8 = 8;
 /// let blob_refs = add_files(&paths[..], threads, false);
 /// ```
-pub fn add_files(paths: &[PathBuf], threads: u8, verbose: bool) -> Vec<BlobRef> {
+pub fn add_files(paths: &[PathBuf], threads: u8, verbose: bool) {
     let paths: Vec<PathBuf> = paths.iter().flat_map(|p| collect_file_paths(p)).collect();
 
     let (tx, rx) = mpsc::channel();
@@ -102,7 +102,7 @@ pub fn add_files(paths: &[PathBuf], threads: u8, verbose: bool) -> Vec<BlobRef> 
             .template("[{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})\n{msg}"),
     );
 
-    let mut blob_refs = vec![];
+    let mut blob_counter: i32 = 0;
     for (path, blob_ref) in rx.iter() {
         if let Ok(blob_ref) = blob_ref {
             if verbose {
@@ -112,12 +112,11 @@ pub fn add_files(paths: &[PathBuf], threads: u8, verbose: bool) -> Vec<BlobRef> 
                     path.to_string_lossy()
                 ));
             }
-            blob_refs.push(blob_ref)
+            blob_counter += 1;
         } else {
             eprintln!("ERROR\t\t{}", path.to_string_lossy())
         }
         pb.inc(1);
     }
-    pb.finish_with_message(format!("Successfully added {} blobs!", blob_refs.len()));
-    blob_refs
+    pb.finish_with_message(format!("Successfully added {} blobs!", blob_counter));
 }
