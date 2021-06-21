@@ -8,9 +8,28 @@ use env_logger::Env;
 use futures::future::{ok, Either};
 use futures::{StreamExt, TryStreamExt};
 use rustore::blob::BlobRef;
+use serde::Serialize;
 use sha2::Digest;
 use std::io::Write;
 use tempfile::NamedTempFile;
+
+/// Struct representing the json payload returned to the user upon error
+#[derive(Serialize)]
+struct ErrorResponse {
+    /// The name of the error, can be used to match to error classes in client.
+    name: String,
+    /// A message providing more detail on the error.
+    message: String,
+}
+
+impl ErrorResponse {
+    fn new(name: &str, message: &str) -> Self {
+        ErrorResponse {
+            name: String::from(name),
+            message: String::from(message),
+        }
+    }
+}
 
 #[get("/status")]
 async fn app_status() -> impl Responder {
@@ -21,12 +40,15 @@ async fn app_status() -> impl Responder {
 async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
     let blob_ref = match BlobRef::new(&hash) {
         Ok(blob_ref) if !blob_ref.exists() => {
-            return HttpResponse::NotFound()
-                .body(format!("Could not find blob corresponding to {}", &hash));
+            return HttpResponse::NotFound().json(ErrorResponse::new(
+                "BlobNotFound",
+                &format!("Could not find blob corresponding to {}", &hash),
+            ))
         }
         Ok(blob_ref) => blob_ref,
         Err(e) => {
-            return HttpResponse::BadRequest().body(e.to_string());
+            return HttpResponse::BadRequest()
+                .json(ErrorResponse::new("InvalidReference", &e.to_string()));
         }
     };
 
@@ -42,8 +64,10 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
                     .created
                     .to_rfc3339_opts(chrono::SecondsFormat::Secs, false),
             )
+            .header("content-disposition", "attachment")
             .body(content),
-        Err(_) => HttpResponse::InternalServerError().body("Cannot open file"),
+        Err(_) => HttpResponse::InternalServerError()
+            .json(ErrorResponse::new("ServerError", "Cannot open the file")),
     }
 }
 
@@ -51,18 +75,22 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
 async fn delete_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
     let blob_ref = match BlobRef::new(&hash) {
         Ok(blob_ref) if !blob_ref.exists() => {
-            return HttpResponse::NotFound()
-                .body(format!("Could not find blob corresponding to {}", &hash));
+            return HttpResponse::NotFound().json(ErrorResponse::new(
+                "BlobNotFound",
+                &format!("Could not find blob corresponding to {}", &hash),
+            ));
         }
         Ok(blob_ref) => blob_ref,
         Err(e) => {
-            return HttpResponse::BadRequest().body(e.to_string());
+            return HttpResponse::BadRequest()
+                .json(ErrorResponse::new("InvalidReference", &e.to_string()));
         }
     };
 
     match blob_ref.delete() {
         Ok(_) => HttpResponse::Ok().body(""),
-        Err(_) => HttpResponse::InternalServerError().body("Cannot delete file"),
+        Err(_) => HttpResponse::InternalServerError()
+            .json(ErrorResponse::new("ServerError", "Cannot delete the file")),
     }
 }
 
@@ -133,9 +161,9 @@ pub async fn start_server(settings: ServerSettings) -> std::io::Result<()> {
                     Some(auth_token) if validate_token(auth_token.to_str().unwrap()) => {
                         Either::Left(srv.call(req))
                     }
-                    _ => {
-                        Either::Right(ok(req.into_response(HttpResponse::Unauthorized().finish())))
-                    }
+                    _ => Either::Right(ok(req.into_response(HttpResponse::Unauthorized().json(
+                        ErrorResponse::new("InvalidToken","Unauthorized: the provided authentication token does not match our records."),
+                    )))),
                 }
             })
             .configure(init_routes)
