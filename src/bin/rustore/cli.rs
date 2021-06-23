@@ -38,7 +38,7 @@ fn server_commands() -> App<'static, 'static> {
         .subcommand(SubCommand::with_name("generate-token").about("Generate an API Token."))
 }
 pub fn app() -> App<'static, 'static> {
-    let app = App::new("rustore")
+    App::new("rustore")
         .version(crate_version!())
         .author(crate_authors!())
         .about("Simple content addressable blob store")
@@ -144,6 +144,5 @@ option in the CLI or using environment variables will override what is specified
                         .help("Prints the blob's metadata"),
                 ),
         )
-        .subcommand(server_commands());
-    app
+        .subcommand(server_commands())
 }

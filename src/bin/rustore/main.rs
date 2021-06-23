@@ -26,8 +26,8 @@ fn main() {
     // - if the path is specified use that
     // - if the path is not specified look for the config in the default path
     // If the config cannot be loaded, use the default configuration.
-    let mut settings = Settings::from_file(clap_matches.value_of("config").map(PathBuf::from))
-        .unwrap_or(Settings::default());
+    let mut settings =
+        Settings::from_file(clap_matches.value_of("config").map(PathBuf::from)).unwrap_or_default();
 
     if let Some(data_store_path) = clap_matches.value_of("data_store_path") {
         settings.data_store_dir = data_store_path.into();
@@ -39,7 +39,6 @@ fn main() {
         let input_paths: Vec<PathBuf> = clap_matches
             .values_of("files")
             .unwrap()
-            .into_iter()
             .map(PathBuf::from)
             .collect();
         let threads = value_t_or_exit!(clap_matches.value_of("threads"), u8);
