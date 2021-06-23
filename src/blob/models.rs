@@ -15,15 +15,20 @@ use tree_magic_mini as magic;
 /// Struct representing a reference to an entry in the blob store
 #[derive(Debug, Clone)]
 pub struct BlobRef {
+    /// The value of the reference, i.e. the sha256 hash of the blob
     value: String,
 }
 
-/// Structure representing the metadata associated to a blob
+/// Struct representing the metadata associated to a blob
 #[derive(Debug)]
 pub struct BlobMetadata {
+    /// The filename of the blob
     pub filename: String,
+    /// The mime-type of the blob (e.g. `image/png`)
     pub mime_type: String,
+    /// The size of the blob in bytes
     pub size: u64,
+    /// The creation timestamp of the blob
     pub created: DateTime<Utc>,
 }
 
