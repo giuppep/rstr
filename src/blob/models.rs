@@ -89,7 +89,7 @@ impl BlobRef {
     /// # use std::path::Path;
     /// # use rustore::blob::BlobRef;
     /// let path = Path::new("test/test_file.txt");
-    /// let blob_ref = BlobRef::from_path(path);
+    /// let blob_ref = BlobRef::from_path(&path);
     /// assert!(blob_ref.is_ok());
     /// assert_eq!(blob_ref.unwrap().reference(), "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de")
     /// ```
@@ -99,7 +99,7 @@ impl BlobRef {
     /// # Errors
     ///
     /// See [`std::fs::File::open`] and [`io::copy`]
-    pub fn from_path(path: &Path) -> Result<BlobRef> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<BlobRef> {
         let mut file = File::open(path)?;
         let mut hasher = BlobRef::hasher();
 
