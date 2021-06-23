@@ -1,4 +1,4 @@
-use rustore::blob::BlobRef;
+use rustore::BlobRef;
 use std::{io, io::Write};
 pub fn delete_blobs<'a, I>(hashes: I, interactive: bool)
 where

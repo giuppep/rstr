@@ -5,7 +5,7 @@ mod settings;
 mod utils;
 use clap::value_t_or_exit;
 use cli::app;
-use rustore::blob;
+use rustore;
 use security::generate_token;
 use settings::Settings;
 use std::path::PathBuf;
@@ -44,7 +44,7 @@ fn main() {
         let threads = value_t_or_exit!(clap_matches.value_of("threads"), u8);
         let verbose = clap_matches.is_present("verbose");
 
-        blob::add_files(&input_paths[..], threads, verbose);
+        rustore::add_files(&input_paths[..], threads, verbose);
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("check") {

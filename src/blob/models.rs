@@ -38,7 +38,7 @@ pub struct BlobMetadata {
 ///
 /// ```
 /// # use sha2::{Digest, Sha256};
-/// # use rustore::blob::BlobRef;
+/// # use rustore::BlobRef;
 /// let mut hasher = Sha256::new();
 /// hasher.update(b"hello world");
 /// let blob_ref = BlobRef::from(hasher);
@@ -60,12 +60,12 @@ impl BlobRef {
     /// - contains any char except lowercase letters and digits
     /// # Examples
     /// ```
-    /// # use rustore::blob::BlobRef;
+    /// # use rustore::BlobRef;
     /// let blob_ref = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
     /// assert!(blob_ref.is_ok())
     /// ```
     /// ```
-    /// # use rustore::blob::BlobRef;
+    /// # use rustore::BlobRef;
     /// let blob_ref = BlobRef::new("a_short_hash");
     /// assert!(blob_ref.is_err());
     /// let blob_ref = BlobRef::new("....aninvalidhash.29bc64a9d3732b4b9035125fdb3285f5b6455778edca7");
@@ -92,7 +92,7 @@ impl BlobRef {
     ///
     /// ```
     /// # use std::path::Path;
-    /// # use rustore::blob::BlobRef;
+    /// # use rustore::BlobRef;
     /// let path = Path::new("test/test_file.txt");
     /// let blob_ref = BlobRef::from_path(&path);
     /// assert!(blob_ref.is_ok());
@@ -117,7 +117,7 @@ impl BlobRef {
     /// # Examples
     ///
     /// ```
-    /// # use rustore::blob::BlobRef;
+    /// # use rustore::BlobRef;
     /// # use sha2::{Digest, Sha256};
     /// let mut hasher = BlobRef::hasher();
     /// hasher.update(b"hello world");
@@ -133,7 +133,7 @@ impl BlobRef {
     /// # Examples
     ///
     /// ```
-    /// # use rustore::blob::BlobRef;
+    /// # use rustore::BlobRef;
     /// std::env::set_var("RUSTORE_DATA_PATH", "/tmp/rustore");
     /// let hash = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
     /// let blob_ref = BlobRef::new(hash).unwrap();
