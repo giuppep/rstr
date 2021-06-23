@@ -7,7 +7,7 @@ use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Re
 use env_logger::Env;
 use futures::future::{ok, Either};
 use futures::{StreamExt, TryStreamExt};
-use rustore::blob::BlobRef;
+use rustore::BlobRef;
 use serde::Serialize;
 use sha2::Digest;
 use std::io::Write;

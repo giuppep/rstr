@@ -64,13 +64,13 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
 /// ```text
 /// f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de        test/test_file.txt
 /// ```
-/// At the end of the process it will print to `stderr` all the errors.
+/// During the process it will print to `stderr` all the errors.
 ///
 /// # Examples
 ///
 /// ```no_run
 /// # use std::path::Path;
-/// # use rustore::blob::add_files;
+/// # use rustore::add_files;
 /// let paths = [Path::new("/path/to/my/files/")];
 /// let threads: u8 = 8;
 /// let blob_refs = add_files(&paths[..], threads, false);

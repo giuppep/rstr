@@ -9,8 +9,8 @@ pub enum Error {
     /// # Examples
     ///
     /// ```
-    /// use rustore::blob;
-    /// let err = blob::BlobRef::new("invalid").unwrap_err();
+    /// use rustore::BlobRef;
+    /// let err = BlobRef::new("invalid").unwrap_err();
     /// # // io::Error does not implement PartialEq
     /// // err == Error::InvalidRef
     /// assert_eq!(format!("{}", err), "Error: Invalid reference. Reference must have 64 alphanumerical characters.");
