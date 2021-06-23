@@ -69,14 +69,17 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
 /// # Examples
 ///
 /// ```no_run
-/// # use std::path::PathBuf;
+/// # use std::path::Path;
 /// # use rustore::blob::add_files;
-/// let paths = [PathBuf::from("/path/to/my/files/")];
+/// let paths = [Path::new("/path/to/my/files/")];
 /// let threads: u8 = 8;
 /// let blob_refs = add_files(&paths[..], threads, false);
 /// ```
-pub fn add_files(paths: &[PathBuf], threads: u8, verbose: bool) {
-    let paths: Vec<PathBuf> = paths.iter().flat_map(|p| collect_file_paths(p)).collect();
+pub fn add_files<P: AsRef<Path>>(paths: &[P], threads: u8, verbose: bool) {
+    let paths: Vec<PathBuf> = paths
+        .iter()
+        .flat_map(|p| collect_file_paths(p.as_ref()))
+        .collect();
 
     let (tx, rx) = mpsc::channel();
 
