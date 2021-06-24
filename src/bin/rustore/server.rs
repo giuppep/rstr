@@ -173,3 +173,68 @@ pub async fn start_server(settings: ServerSettings) -> std::io::Result<()> {
     .run()
     .await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{http, test, web, App};
+
+    #[actix_rt::test]
+    async fn test_app_status() {
+        let mut app = test::init_service(App::new().configure(init_routes)).await;
+        let req = test::TestRequest::get().uri("/status").to_request();
+        let resp = test::call_service(&mut app, req).await;
+        assert!(resp.status().is_success())
+    }
+
+    #[actix_rt::test]
+    async fn test_get_blob() {
+        std::env::set_var("RUSTORE_DATA_PATH", "test/test_data_store");
+
+        let mut app = test::init_service(App::new().configure(init_routes)).await;
+
+        // Test getting the blob and its metadata
+        let url = "/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
+        let req = test::TestRequest::get().uri(url).to_request();
+        let mut resp = test::call_service(&mut app, req).await;
+
+        assert_eq!(resp.status(), http::StatusCode::OK);
+
+        assert_eq!(
+            resp.headers().get(http::header::CONTENT_TYPE).unwrap(),
+            http::HeaderValue::from_static("text/plain")
+        );
+        assert_eq!(
+            resp.headers()
+                .get(http::header::CONTENT_DISPOSITION)
+                .unwrap(),
+            http::HeaderValue::from_static("attachment")
+        );
+
+        let (result, _) = resp.take_body().into_future().await;
+        assert_eq!(
+            result.unwrap().unwrap(),
+            web::Bytes::from_static(b"This is a test file.")
+        )
+    }
+
+    #[actix_rt::test]
+    async fn test_get_errors() {
+        std::env::set_var("RUSTORE_DATA_PATH", "test/test_data_store");
+        let mut app = test::init_service(App::new().configure(init_routes)).await;
+
+        let missing_ref_url =
+            "/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0dx";
+        let req = test::TestRequest::get().uri(missing_ref_url).to_request();
+        let resp = test::call_service(&mut app, req).await;
+        assert_eq!(resp.status(), http::StatusCode::NOT_FOUND);
+
+        let invalid_ref_url = "/blobs/invalid.url";
+        let req = test::TestRequest::get().uri(invalid_ref_url).to_request();
+        let resp = test::call_service(&mut app, req).await;
+        assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
+    }
+
+    // TODO: how can we test multipart blob upload?
+    // TODO: test authentication
+}
