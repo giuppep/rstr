@@ -1,15 +1,17 @@
 use crate::blob::{BlobRef, Error, Result};
 use ignore::{WalkBuilder, WalkState};
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::{fs, io, thread};
 
+type BlobRefAndPath = (PathBuf, BlobRef);
+
 /// Function to add a file from disk to the blob store
 fn add_file(path: &Path) -> Result<BlobRef> {
     if !path.is_file() {
-        return Err(Error::Io(io::Error::from(io::ErrorKind::InvalidInput)));
+        return Err(io::Error::from(io::ErrorKind::InvalidInput).into());
     }
 
     let blob_ref = BlobRef::from_path(path)?;
@@ -54,28 +56,38 @@ fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
     paths
 }
 
+fn progress_bar(length: u64) -> ProgressBar {
+    let pb = ProgressBar::new(length);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})\n{msg}"),
+    );
+    pb
+}
+
 /// Given a list of paths to files/directories it adds them to the blob store. In the case
 /// of a directory it adds all the files in its children recursively.
 ///
 /// The function iterates over all paths in parallel and adds each file to the blob store.
 ///
-/// If `verbose` is set to `true` it will print to stdout the reference for the file and
-/// its original path, e.g.:
-/// ```text
-/// f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de        test/test_file.txt
-/// ```
-/// During the process it will print to `stderr` all the errors.
+/// It returns two vectors: one containing the paths to the files that were successfully
+/// added together with their generated `BlobRef` and the other containing the list of
+/// paths that errored together with the error.
 ///
 /// # Examples
 ///
 /// ```no_run
 /// # use std::path::Path;
-/// # use rustore::add_files;
+/// # use rustore::{add_files, BlobRef};
 /// let paths = [Path::new("/path/to/my/files/")];
 /// let threads: u8 = 8;
-/// let blob_refs = add_files(&paths[..], threads, false);
+/// let (blob_refs_with_paths, errors) = add_files(&paths[..], threads);
+/// let blob_refs: Vec<BlobRef> = blob_refs_with_paths.into_iter().map(|(_, b)| b).collect();
 /// ```
-pub fn add_files<P: AsRef<Path>>(paths: &[P], threads: u8, verbose: bool) {
+pub fn add_files<P: AsRef<Path>>(
+    paths: &[P],
+    threads: u8,
+) -> (Vec<BlobRefAndPath>, Vec<(PathBuf, Error)>) {
     let paths: Vec<PathBuf> = paths
         .iter()
         .flat_map(|p| collect_file_paths(p.as_ref()))
@@ -99,27 +111,14 @@ pub fn add_files<P: AsRef<Path>>(paths: &[P], threads: u8, verbose: bool) {
 
     drop(tx);
 
-    let pb = ProgressBar::new(paths.len() as u64);
-    pb.set_style(
-        ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})\n{msg}"),
-    );
+    let pb = progress_bar(paths.len() as u64);
+    let (success, errors): (Vec<_>, Vec<_>) =
+        rx.iter().progress_with(pb).partition(|(_, b)| b.is_ok());
 
-    let mut blob_counter: i32 = 0;
-    for (path, blob_ref) in rx.iter() {
-        if let Ok(blob_ref) = blob_ref {
-            if verbose {
-                pb.println(format!(
-                    "{}\t\t{}",
-                    &blob_ref.reference(),
-                    path.to_string_lossy()
-                ));
-            }
-            blob_counter += 1;
-        } else {
-            eprintln!("ERROR\t\t{}", path.to_string_lossy())
-        }
-        pb.inc(1);
-    }
-    pb.finish_with_message(format!("Successfully added {} blobs!", blob_counter));
+    let success = success.into_iter().map(|(p, b)| (p, b.unwrap())).collect();
+    let errors = errors
+        .into_iter()
+        .map(|(p, b)| (p, b.unwrap_err()))
+        .collect();
+    (success, errors)
 }
