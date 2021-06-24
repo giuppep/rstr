@@ -15,12 +15,18 @@
 //!
 //! Add files or directories to the blob store:
 //! ```no_run
-//! use rustore::add_files;
-//! use std::path::Path;
+//! use rustore::{add_files, BlobRef};
+//! use std::path::{Path, PathBuf};
 //!
 //! let n_threads: u8 = 8;
-//! let verbose: bool = false;
-//! add_files(&[Path::new("/path/to/a/file.pdf"), Path::new("/path/to/a/directory/")], n_threads, verbose);
+//! let (blob_refs_with_paths, _): (Vec<(PathBuf, BlobRef)>, _) = add_files(
+//!     &[
+//!         Path::new("/path/to/a/file.pdf"),
+//!         Path::new("/path/to/a/directory/"),
+//!     ],
+//!     n_threads,
+//! );
+//! let blob_refs: Vec<BlobRef> = blob_refs_with_paths.into_iter().map(|(_, b)| b).collect();
 //! ```
 //!
 //! Retrieve a blob from the blob store

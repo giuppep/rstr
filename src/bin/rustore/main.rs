@@ -42,9 +42,17 @@ fn main() {
             .map(PathBuf::from)
             .collect();
         let threads = value_t_or_exit!(clap_matches.value_of("threads"), u8);
-        let verbose = clap_matches.is_present("verbose");
 
-        rustore::add_files(&input_paths[..], threads, verbose);
+        let (blob_refs_with_paths, errors) = rustore::add_files(&input_paths[..], threads);
+
+        if clap_matches.is_present("verbose") {
+            for (path, blob_ref) in blob_refs_with_paths {
+                println!("{}\t{}", &blob_ref.reference(), &path.to_string_lossy());
+            }
+        }
+        for (path, error) in errors {
+            eprintln!("{}\t{}", error, &path.to_string_lossy())
+        }
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("check") {
