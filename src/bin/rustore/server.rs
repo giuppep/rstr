@@ -189,7 +189,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_get_blob() {
-        std::env::set_var("RUSTORE_DATA_PATH", "test/test_data_store");
+        std::env::set_var("RUSTORE_DATA_PATH", "tests/test_data_store");
 
         let mut app = test::init_service(App::new().configure(init_routes)).await;
 
@@ -220,7 +220,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_get_errors() {
-        std::env::set_var("RUSTORE_DATA_PATH", "test/test_data_store");
+        std::env::set_var("RUSTORE_DATA_PATH", "tests/test_data_store");
         let mut app = test::init_service(App::new().configure(init_routes)).await;
 
         let missing_ref_url =

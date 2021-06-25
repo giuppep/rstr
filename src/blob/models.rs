@@ -93,7 +93,7 @@ impl BlobRef {
     /// ```
     /// # use std::path::Path;
     /// # use rustore::BlobRef;
-    /// let path = Path::new("test/test_file.txt");
+    /// let path = Path::new("tests/test_file.txt");
     /// let blob_ref = BlobRef::from_path(&path);
     /// assert!(blob_ref.is_ok());
     /// assert_eq!(blob_ref.unwrap().reference(), "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de")
