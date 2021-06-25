@@ -7,7 +7,7 @@ use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Re
 use env_logger::Env;
 use futures::future::{ok, Either};
 use futures::{StreamExt, TryStreamExt};
-use rustore::{BlobRef, BlobStore};
+use rustore::{BlobRef, BlobStore, Error};
 use serde::Serialize;
 use sha2::Digest;
 use std::io::Write;
@@ -39,12 +39,6 @@ async fn app_status() -> impl Responder {
 #[route("/blobs/{hash}", method = "GET", method = "HEAD")]
 async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
     let blob_ref = match BlobRef::new(&hash) {
-        // Ok(blob_ref) if !blob_ref.exists() => {
-        //     return HttpResponse::NotFound().json(ErrorResponse::new(
-        //         "BlobNotFound",
-        //         &format!("Could not find blob corresponding to {}", &hash),
-        //     ))
-        // }
         Ok(blob_ref) => blob_ref,
         Err(e) => {
             return HttpResponse::BadRequest()
@@ -54,21 +48,26 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
 
     let blob_store = BlobStore::new(std::env::var("RUSTORE_DATA_PATH").unwrap()).unwrap();
 
-    let metadata = blob_store.metadata(&blob_ref).unwrap();
-
     // TODO: change to stream?
     match blob_store.get(&blob_ref) {
-        Ok(content) => HttpResponse::Ok()
-            .content_type(metadata.mime_type)
-            .header("filename", metadata.filename)
-            .header(
-                "created",
-                metadata
-                    .created
-                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, false),
-            )
-            .header("content-disposition", "attachment")
-            .body(content),
+        Ok(content) => {
+            let metadata = blob_store.metadata(&blob_ref).unwrap();
+            HttpResponse::Ok()
+                .content_type(metadata.mime_type)
+                .header("filename", metadata.filename)
+                .header(
+                    "created",
+                    metadata
+                        .created
+                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, false),
+                )
+                .header("content-disposition", "attachment")
+                .body(content)
+        }
+        Err(Error::BlobNotFound) => HttpResponse::NotFound().json(ErrorResponse::new(
+            "BlobNotFound",
+            &format!("Could not find blob corresponding to {}", &hash),
+        )),
         Err(_) => HttpResponse::InternalServerError()
             .json(ErrorResponse::new("ServerError", "Cannot open the file")),
     }
@@ -77,12 +76,6 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
 #[delete("/blobs/{hash}")]
 async fn delete_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
     let blob_ref = match BlobRef::new(&hash) {
-        // Ok(blob_ref) if !blob_ref.exists() => {
-        //     return HttpResponse::NotFound().json(ErrorResponse::new(
-        //         "BlobNotFound",
-        //         &format!("Could not find blob corresponding to {}", &hash),
-        //     ));
-        // }
         Ok(blob_ref) => blob_ref,
         Err(e) => {
             return HttpResponse::BadRequest()
@@ -94,6 +87,12 @@ async fn delete_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder
 
     match blob_store.delete(&blob_ref) {
         Ok(_) => HttpResponse::Ok().body(""),
+        Err(Error::BlobNotFound) => {
+            return HttpResponse::NotFound().json(ErrorResponse::new(
+                "BlobNotFound",
+                &format!("Could not find blob corresponding to {}", &hash),
+            ))
+        }
         Err(_) => HttpResponse::InternalServerError()
             .json(ErrorResponse::new("ServerError", "Cannot delete the file")),
     }

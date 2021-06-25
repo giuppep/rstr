@@ -74,7 +74,7 @@ impl BlobStore {
         if let Some(Ok(entry)) = entries.next() {
             return Ok(entry.path());
         };
-        Err(Error::Io(io::Error::from(io::ErrorKind::NotFound)))
+        Err(Error::BlobNotFound)
     }
 
     /// Add a file to the blob store given a path.
