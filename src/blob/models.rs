@@ -32,6 +32,116 @@ pub struct BlobMetadata {
     pub created: DateTime<Utc>,
 }
 
+pub struct BlobStore {
+    root: PathBuf,
+}
+
+impl BlobStore {
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<BlobStore> {
+        Ok(BlobStore {
+            root: path.as_ref().into(),
+        })
+    }
+
+    /// Returns an instance of the hasher used to compute the blob reference for a file
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use rustore::BlobStore;
+    /// # use sha2::{Digest, Sha256};
+    /// let mut hasher = BlobStore::hasher();
+    /// hasher.update(b"hello world");
+    /// let result = hasher.finalize();
+    /// assert_eq!(format!("{:x}", result), "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9")
+    /// ```
+    pub fn hasher() -> Sha256 {
+        Sha256::new()
+    }
+
+    /// Given a `BlobRef` it returns it's path inside the blob store
+    fn get_blob_path(&self, blob_ref: &BlobRef) -> PathBuf {
+        self.root.join(blob_ref.to_path())
+    }
+
+    /// Given a `BlobRef` it returns it's path inside the blob store, including the filename
+    ///
+    /// # Errors
+    ///
+    /// It will error if the directory is not present/cannot be read or there is no file.
+    fn get_blob_file_path(&self, blob_ref: &BlobRef) -> Result<PathBuf> {
+        let mut entries = self.get_blob_path(blob_ref).read_dir()?;
+        if let Some(Ok(entry)) = entries.next() {
+            return Ok(entry.path());
+        };
+        Err(Error::Io(io::Error::from(io::ErrorKind::NotFound)))
+    }
+    pub fn add<P: AsRef<Path>>(path: P) -> Result<BlobRef> {
+        let mut file = File::open(path)?;
+        let mut hasher = BlobStore::hasher();
+
+        io::copy(&mut file, &mut hasher)?;
+        Ok(BlobRef::from(hasher))
+    }
+
+    pub fn get(&self, blob_ref: &BlobRef) -> Result<Vec<u8>> {
+        Ok(fs::read(&self.get_blob_file_path(blob_ref)?)?)
+    }
+
+    /// Returns `true` if there is a file associated with the `BlobRef` in the blob store
+    pub fn exists(&self, blob_ref: &BlobRef) -> bool {
+        let dir = self.get_blob_path(blob_ref);
+        dir.exists() && dir.read_dir().unwrap().next().is_some()
+    }
+
+    /// Given a `BlobRef` it deletes the corresponding blob from the blob store
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use rustore::{BlobStore, BlobRef};
+    /// let blob_store = BlobStore::new("/path/to/blob/store").unwrap();
+    ///
+    /// let blob_ref = BlobRef::new("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9").unwrap();
+    /// assert!(blob_store.exists(&blob_ref));
+    ///
+    /// blob_store.delete(&blob_ref);
+    /// assert!(!blob_store.exists(&blob_ref));
+    /// ```
+    /// # Errors
+    ///
+    /// See [`fs::remove_dir_all`].
+    pub fn delete(&self, blob_ref: &BlobRef) -> Result<()> {
+        Ok(fs::remove_dir_all(self.get_blob_path(blob_ref))?)
+    }
+
+    /// Given a `BlobRef` returns the metadata relative to the referenced blob. For more
+    /// details on the metadata returned see `BlobMetadata`.
+    ///
+    /// The mime type is inferred from the file's magic number as a string.
+    /// It defaults to "application/octet-stream" if it cannot determine the type.
+    /// We use the [`tree_magic_mini`] crate to infer the mime type.
+    ///
+    /// # Errors
+    ///
+    /// Will return an error if the file cannot be found/opened or if [`std::fs::metadata`]
+    /// fails.
+    pub fn metadata(&self, blob_ref: &BlobRef) -> Result<BlobMetadata> {
+        let file_path = self.get_blob_path(blob_ref);
+        let filename = file_path.file_name().unwrap().to_str().unwrap().to_string();
+
+        let mime = magic::from_filepath(&self.get_blob_file_path(blob_ref)?)
+            .unwrap_or("application/octet-stream");
+
+        let metadata = fs::metadata(file_path)?;
+        Ok(BlobMetadata {
+            mime_type: String::from(mime),
+            filename,
+            size: metadata.len(),
+            created: metadata.created()?.into(),
+        })
+    }
+}
 /// Returns a `BlobRef` instance from a hasher
 ///
 /// # Examples

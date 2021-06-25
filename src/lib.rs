@@ -49,4 +49,4 @@
 //! ```
 
 mod blob;
-pub use blob::{add_files, BlobMetadata, BlobRef, Error, Result};
+pub use blob::{add_files, BlobMetadata, BlobRef, BlobStore, Error, Result};
