@@ -1,29 +1,29 @@
-use crate::blob::{BlobRef, Error, Result};
+use crate::blob::{BlobRef, BlobStore, Error, Result};
 use ignore::{WalkBuilder, WalkState};
 use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::mpsc;
-use std::{fs, io, thread};
+use std::thread;
 
 type BlobRefAndPath = (PathBuf, BlobRef);
 
-/// Function to add a file from disk to the blob store
-fn add_file(path: &Path) -> Result<BlobRef> {
-    if !path.is_file() {
-        return Err(io::Error::from(io::ErrorKind::InvalidInput).into());
-    }
+// /// Function to add a file from disk to the blob store
+// fn add_file(path: &Path) -> Result<BlobRef> {
+//     if !path.is_file() {
+//         return Err(io::Error::from(io::ErrorKind::InvalidInput).into());
+//     }
 
-    let blob_ref = BlobRef::from_path(path)?;
-    if !blob_ref.exists() {
-        let save_path = &blob_ref.to_path();
-        fs::create_dir_all(save_path)?;
-        let filename = path.file_name().unwrap();
-        fs::copy(path, save_path.join(&filename))?;
-    }
+//     let blob_ref = BlobRef::from_path(path)?;
+//     if !blob_ref.exists() {
+//         let save_path = &blob_ref.to_path();
+//         fs::create_dir_all(save_path)?;
+//         let filename = path.file_name().unwrap();
+//         fs::copy(path, save_path.join(&filename))?;
+//     }
 
-    Ok(blob_ref)
-}
+//     Ok(blob_ref)
+// }
 
 /// Given a path to a directory it recursively walks all its children in parallel
 /// and returns a list of paths to files.
@@ -98,12 +98,15 @@ pub fn add_files<P: AsRef<Path>>(
     let chunk_size = std::cmp::max(paths.len() / threads as usize, 1_usize);
     let chunks = paths.chunks(chunk_size);
 
+    let blob_store = BlobStore::new(std::env::var("RUSTORE_DATA_PATH").unwrap()).unwrap();
+
     for chunk in chunks {
         let tx = tx.clone();
         let chunk = chunk.to_owned();
+        let blob_store = blob_store.clone();
         thread::spawn(move || {
             for path in chunk {
-                let blob_ref = add_file(&path);
+                let blob_ref = blob_store.add(&path);
                 tx.send((path, blob_ref)).expect("err")
             }
         });
