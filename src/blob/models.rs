@@ -81,16 +81,17 @@ impl BlobStore {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```
     /// use rustore::{BlobStore, BlobRef};
     /// use std::path::PathBuf;
-    /// let blob_store = BlobStore::new("/path/to/blob/store").unwrap();
+    /// let blob_store = BlobStore::new("tests/test_data_store/").unwrap();
     ///
-    /// let blob_ref: BlobRef = blob_store.add(&PathBuf::from("/path/to/my/file.pdf")).unwrap();
-    /// assert!(blob_store.exists(&blob_ref))
+    /// let blob_ref: BlobRef = blob_store.add("tests/test_file.txt").unwrap();
+    /// assert!(blob_store.exists(&blob_ref));
+    /// assert_eq!(blob_ref.reference(), "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
     /// ```
-    pub fn add<P: AsRef<Path>>(&self, path: &P) -> Result<BlobRef> {
-        let mut file = File::open(path)?;
+    pub fn add<P: AsRef<Path>>(&self, path: P) -> Result<BlobRef> {
+        let mut file = File::open(&path)?;
         let mut hasher = BlobStore::hasher();
 
         io::copy(&mut file, &mut hasher)?;
@@ -99,8 +100,10 @@ impl BlobStore {
         if !self.exists(&blob_ref) {
             let save_path = self.get_blob_path(&blob_ref);
             fs::create_dir_all(&save_path)?;
+
             let filename = path.as_ref().file_name().unwrap();
-            fs::copy(path, &save_path.join(&filename))?;
+            let save_path = save_path.join(&filename);
+            fs::copy(path, save_path)?;
         };
 
         Ok(blob_ref)
@@ -111,6 +114,17 @@ impl BlobStore {
     }
 
     /// Returns `true` if there is a file associated with the `BlobRef` in the blob store
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustore::{BlobStore, BlobRef};
+    ///
+    /// let blob_store = BlobStore::new("tests/test_data_store/").unwrap();
+    /// let blob_ref = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de").unwrap();
+    ///
+    /// assert!(blob_store.exists(&blob_ref))
+    /// ```
     pub fn exists(&self, blob_ref: &BlobRef) -> bool {
         let dir = self.get_blob_path(blob_ref);
         dir.exists() && dir.read_dir().unwrap().next().is_some()
