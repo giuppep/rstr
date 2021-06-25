@@ -83,7 +83,7 @@ fn main() {
             if let Some(tmp_directory) = clap_matches.value_of("tmp_directory") {
                 settings.server.tmp_directory = tmp_directory.parse().unwrap()
             }
-            server::start_server(settings.server).unwrap()
+            server::start_server(settings).unwrap()
         }
 
         if clap_matches.subcommand_matches("generate-token").is_some() {

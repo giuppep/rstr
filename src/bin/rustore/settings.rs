@@ -9,7 +9,7 @@ fn project_dirs() -> ProjectDirs {
     ProjectDirs::from("", "", "rustore").unwrap()
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ServerSettings {
     /// Port on which to run the rustore server
@@ -22,7 +22,7 @@ pub struct ServerSettings {
     pub token_store_path: PathBuf,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct Settings {
     /// Path to the directory where all the blobs will be stored

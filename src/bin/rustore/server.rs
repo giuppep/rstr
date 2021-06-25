@@ -1,5 +1,5 @@
 use crate::security::validate_token;
-use crate::settings::ServerSettings;
+use crate::settings::Settings;
 use actix_multipart::Multipart;
 use actix_service::Service;
 use actix_web::middleware::Logger;
@@ -37,7 +37,10 @@ async fn app_status() -> impl Responder {
 }
 
 #[route("/blobs/{hash}", method = "GET", method = "HEAD")]
-async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
+async fn get_blob(
+    web::Path((hash,)): web::Path<(String,)>,
+    data: web::Data<Settings>,
+) -> impl Responder {
     let blob_ref = match BlobRef::new(&hash) {
         Ok(blob_ref) => blob_ref,
         Err(e) => {
@@ -46,7 +49,7 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
         }
     };
 
-    let blob_store = BlobStore::new(std::env::var("RUSTORE_DATA_PATH").unwrap()).unwrap();
+    let blob_store = BlobStore::new(&data.data_store_dir).unwrap();
 
     // TODO: change to stream?
     match blob_store.get(&blob_ref) {
@@ -74,7 +77,10 @@ async fn get_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
 }
 
 #[delete("/blobs/{hash}")]
-async fn delete_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder {
+async fn delete_blob(
+    web::Path((hash,)): web::Path<(String,)>,
+    data: web::Data<Settings>,
+) -> impl Responder {
     let blob_ref = match BlobRef::new(&hash) {
         Ok(blob_ref) => blob_ref,
         Err(e) => {
@@ -83,7 +89,7 @@ async fn delete_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder
         }
     };
 
-    let blob_store = BlobStore::new(std::env::var("RUSTORE_DATA_PATH").unwrap()).unwrap();
+    let blob_store = BlobStore::new(&data.data_store_dir).unwrap();
 
     match blob_store.delete(&blob_ref) {
         Ok(_) => HttpResponse::Ok().body(""),
@@ -99,7 +105,7 @@ async fn delete_blob(web::Path((hash,)): web::Path<(String,)>) -> impl Responder
 }
 
 #[post("/blobs")]
-async fn upload_blobs(mut payload: Multipart) -> impl Responder {
+async fn upload_blobs(mut payload: Multipart, data: web::Data<Settings>) -> impl Responder {
     // TODO: handle errors
     let mut blobs: Vec<BlobRef> = Vec::new();
     while let Ok(Some(mut field)) = payload.try_next().await {
@@ -108,10 +114,8 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         let filename = content_type.get_filename().unwrap_or("file");
         let filename = sanitize_filename::sanitize(filename);
 
-        let mut tmp_file =
-            web::block(|| NamedTempFile::new_in(std::env::var("RUSTORE_TMP_FOLDER").unwrap()))
-                .await
-                .unwrap();
+        let tmp_dir = data.server.tmp_directory.clone();
+        let mut tmp_file = web::block(|| NamedTempFile::new_in(tmp_dir)).await.unwrap();
 
         let mut hasher = BlobStore::hasher();
         while let Some(Ok(chunk)) = field.next().await {
@@ -124,7 +128,7 @@ async fn upload_blobs(mut payload: Multipart) -> impl Responder {
         }
         let blob_ref = BlobRef::from(hasher);
 
-        let save_path = blob_ref.to_path();
+        let save_path = std::path::PathBuf::from(&data.data_store_dir).join(blob_ref.to_path());
         web::block(move || {
             std::fs::create_dir_all(&save_path).unwrap();
             tmp_file.persist(&save_path.join(&filename))
@@ -147,18 +151,25 @@ fn init_routes(cfg: &mut web::ServiceConfig) {
 }
 
 #[actix_web::main]
-pub async fn start_server(settings: ServerSettings) -> std::io::Result<()> {
+pub async fn start_server(settings: Settings) -> std::io::Result<()> {
     std::env::set_var(
         "RUST_LOG",
-        format!("{},actix_web={}", settings.log_level, settings.log_level),
+        format!(
+            "{},actix_web={}",
+            settings.server.log_level, settings.server.log_level
+        ),
     );
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    settings.set_env_vars();
-    settings.create_dirs();
+    let addr = format!("127.0.0.1:{}", &settings.server.port.to_string());
 
-    HttpServer::new(|| {
+    settings.server.set_env_vars();
+    // settings.create_dirs();
+    settings.server.create_dirs();
+
+    HttpServer::new(move || {
         App::new()
+            .data(settings.clone())
             .wrap_fn(|req, srv| {
                 let auth_token = req.headers().get("X-Auth-Token");
                 match auth_token {
@@ -173,7 +184,7 @@ pub async fn start_server(settings: ServerSettings) -> std::io::Result<()> {
             .configure(init_routes)
             .wrap(Logger::new("%r %s %b bytes %D msecs"))
     })
-    .bind(format!("127.0.0.1:{}", settings.port.to_string()))?
+    .bind(addr)?
     .run()
     .await
 }
@@ -193,9 +204,11 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_get_blob() {
-        std::env::set_var("RUSTORE_DATA_PATH", "tests/test_data_store");
-
-        let mut app = test::init_service(App::new().configure(init_routes)).await;
+        let settings = Settings {
+            data_store_dir: "tests/test_data_store".into(),
+            ..Settings::default()
+        };
+        let mut app = test::init_service(App::new().data(settings).configure(init_routes)).await;
 
         // Test getting the blob and its metadata
         let url = "/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
@@ -224,8 +237,11 @@ mod tests {
 
     #[actix_rt::test]
     async fn test_get_errors() {
-        std::env::set_var("RUSTORE_DATA_PATH", "tests/test_data_store");
-        let mut app = test::init_service(App::new().configure(init_routes)).await;
+        let settings = Settings {
+            data_store_dir: "tests/test_data_store".into(),
+            ..Settings::default()
+        };
+        let mut app = test::init_service(App::new().data(settings).configure(init_routes)).await;
 
         let missing_ref_url =
             "/blobs/f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0dx";
