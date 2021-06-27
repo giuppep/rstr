@@ -163,8 +163,6 @@ pub async fn start_server(settings: Settings) -> std::io::Result<()> {
 
     let addr = format!("127.0.0.1:{}", &settings.server.port.to_string());
 
-    settings.server.set_env_vars();
-    // settings.create_dirs();
     settings.server.create_dirs();
 
     HttpServer::new(move || {

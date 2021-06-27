@@ -54,11 +54,6 @@ impl Default for Settings {
 }
 
 impl Settings {
-    /// Set the value of the environment variables based on the current configuration
-    pub fn set_env_vars(&self) {
-        std::env::set_var("RUSTORE_DATA_PATH", &self.data_store_dir);
-    }
-
     /// Default path for the configuration file.
     fn default_config_path() -> PathBuf {
         project_dirs().config_dir().join("rustore.toml")
@@ -106,12 +101,6 @@ impl Settings {
 }
 
 impl ServerSettings {
-    /// Set the value of the environment variables based on the current configuration
-    pub fn set_env_vars(&self) {
-        std::env::set_var("RUSTORE_TMP_FOLDER", &self.tmp_directory);
-        std::env::set_var("RUSTORE_TOKEN_STORE_PATH", &self.token_store_path);
-    }
-
     /// Create all directories definied in the current configuration.
     pub fn create_dirs(&self) {
         std::fs::create_dir_all(&self.tmp_directory).unwrap();

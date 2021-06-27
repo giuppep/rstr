@@ -33,8 +33,6 @@ fn main() {
         settings.data_store_dir = data_store_path.into();
     }
 
-    settings.set_env_vars();
-
     if let Some(clap_matches) = clap_matches.subcommand_matches("add") {
         let input_paths: Vec<PathBuf> = clap_matches
             .values_of("files")
@@ -70,8 +68,6 @@ fn main() {
     }
 
     if let Some(clap_matches) = clap_matches.subcommand_matches("server") {
-        settings.server.set_env_vars();
-
         if let Some(clap_matches) = clap_matches.subcommand_matches("start") {
             if let Some(port) = clap_matches.value_of("port") {
                 settings.server.port = port.parse().unwrap_or_default()
