@@ -31,16 +31,41 @@ pub struct BlobMetadata {
     pub created: DateTime<Utc>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BlobStore {
     root: PathBuf,
 }
 
 impl BlobStore {
+    /// Creates a new instance of the `BlobStore` struct used to interact with the blob
+    /// store. If the specified blob store root path does not exists, it tries to create
+    /// it.
+    ///
+    /// # Errors
+    ///
+    /// It errors if the specified path is not a directory or if it does not exist and
+    /// cannot be created.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustore::BlobStore;
+    ///
+    /// let blob_store = BlobStore::new("tests/test_data_store");
+    /// assert!(blob_store.is_ok());
+    ///
+    /// let blob_store = BlobStore::new("tests/test_file.txt");
+    /// assert!(blob_store.is_err());
+    /// ```
     pub fn new<P: AsRef<Path>>(path: P) -> Result<BlobStore> {
-        Ok(BlobStore {
-            root: path.as_ref().into(),
-        })
+        let path = path.as_ref();
+        if !path.exists() {
+            fs::create_dir_all(path)?
+        } else if !path.is_dir() {
+            // TODO: return proper error
+            return Err(io::Error::from(io::ErrorKind::Other).into());
+        }
+        Ok(BlobStore { root: path.into() })
     }
 
     /// Returns an instance of the hasher used to compute the blob reference for a file
