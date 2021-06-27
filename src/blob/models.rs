@@ -259,11 +259,11 @@ impl BlobStore {
     /// Will return an error if the file cannot be found/opened or if [`std::fs::metadata`]
     /// fails.
     pub fn metadata(&self, blob_ref: &BlobRef) -> Result<BlobMetadata> {
-        let file_path = self.get_blob_path(blob_ref);
-        let filename = file_path.file_name().unwrap().to_str().unwrap().to_string();
+        let file_path = self.get_blob_file_path(blob_ref)?;
 
-        let mime = magic::from_filepath(&self.get_blob_file_path(blob_ref)?)
-            .unwrap_or("application/octet-stream");
+        let mime = magic::from_filepath(&file_path).unwrap_or("application/octet-stream");
+
+        let filename = file_path.file_name().unwrap().to_str().unwrap().to_string();
 
         let metadata = fs::metadata(file_path)?;
         Ok(BlobMetadata {

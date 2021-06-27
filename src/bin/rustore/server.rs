@@ -225,6 +225,10 @@ mod tests {
                 .unwrap(),
             http::HeaderValue::from_static("attachment")
         );
+        assert_eq!(
+            resp.headers().get("filename").unwrap(),
+            http::HeaderValue::from_static("test_file.txt")
+        );
 
         let (result, _) = resp.take_body().into_future().await;
         assert_eq!(

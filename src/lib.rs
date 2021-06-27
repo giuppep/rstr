@@ -32,10 +32,10 @@
 //!
 //! Retrieve a blob from the blob store
 //!
-//! ```no_run
+//! ```
 //! use rustore::{BlobStore, BlobRef};
 //!
-//! let blob_store = BlobStore::new("/path/to/blob/store").unwrap();
+//! let blob_store = BlobStore::new("tests/test_data_store").unwrap();
 //!
 //! // Retrieve a blob from the blob store
 //! let reference = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
@@ -48,7 +48,7 @@
 //!
 //! // Get the blob's metadata
 //! let metadata = blob_store.metadata(&blob_ref).unwrap();
-//! assert_eq!(metadata.filename, "test.txt");
+//! assert_eq!(metadata.filename, "test_file.txt");
 //! assert_eq!(metadata.mime_type, "text/plain");
 //! ```
 
