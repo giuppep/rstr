@@ -5,7 +5,7 @@ mod settings;
 mod utils;
 use clap::value_t_or_exit;
 use cli::app;
-use rustore;
+use rustore::{self, BlobStore};
 use security::generate_token;
 use settings::Settings;
 use std::path::PathBuf;
@@ -41,7 +41,8 @@ fn main() {
             .collect();
         let threads = value_t_or_exit!(clap_matches.value_of("threads"), u8);
 
-        let (blob_refs_with_paths, errors) = rustore::add_files(&input_paths[..], threads);
+        let blob_store = BlobStore::new(&settings.data_store_dir).unwrap();
+        let (blob_refs_with_paths, errors) = blob_store.add_files(&input_paths[..], threads);
 
         if clap_matches.is_present("verbose") {
             for (path, blob_ref) in blob_refs_with_paths {

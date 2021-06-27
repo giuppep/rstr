@@ -15,11 +15,12 @@
 //!
 //! Add files or directories to the blob store:
 //! ```no_run
-//! use rustore::{add_files, BlobRef};
+//! use rustore::{BlobStore,BlobRef};
 //! use std::path::{Path, PathBuf};
 //!
+//! let blob_store = BlobStore::new("tests/test_data_store").unwrap();
 //! let n_threads: u8 = 8;
-//! let (blob_refs_with_paths, _): (Vec<(PathBuf, BlobRef)>, _) = add_files(
+//! let (blob_refs_with_paths, _): (Vec<(PathBuf, BlobRef)>, _) = blob_store.add_files(
 //!     &[
 //!         Path::new("/path/to/a/file.pdf"),
 //!         Path::new("/path/to/a/directory/"),
@@ -52,4 +53,4 @@
 //! ```
 
 mod blob;
-pub use blob::{add_files, BlobMetadata, BlobRef, BlobStore, Error, Result};
+pub use blob::{BlobMetadata, BlobRef, BlobStore, Error, Result};
