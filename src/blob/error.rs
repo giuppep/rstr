@@ -31,7 +31,7 @@ pub enum Error {
     /// assert!(!blob_store.exists(&blob_ref));
     /// let err = blob_store.get(&blob_ref).unwrap_err();
     /// # // io::Error does not implement PartialEq
-    /// // err == Error::InvalidRef
+    /// // err == Error::BlobNotFound
     /// assert_eq!(format!("{}", err), "Error: The requested blob was not found in the blob store.");
     ///
     /// let err = blob_store.delete(&blob_ref).unwrap_err();
