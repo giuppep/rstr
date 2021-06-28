@@ -35,6 +35,105 @@ pub struct BlobMetadata {
     pub created: DateTime<Utc>,
 }
 
+/// Returns a [`BlobRef`] instance from a hasher
+///
+/// # Examples
+///
+/// ```
+/// # use sha2::{Digest, Sha256};
+/// # use rustore::BlobRef;
+/// let mut hasher = Sha256::new();
+/// hasher.update(b"hello world");
+/// let blob_ref = BlobRef::from(hasher);
+/// assert_eq!(blob_ref.reference(), "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
+/// ```
+impl From<Sha256> for BlobRef {
+    fn from(hasher: Sha256) -> Self {
+        BlobRef::new(&format!("{:x}", hasher.finalize())[..]).unwrap()
+    }
+}
+
+impl BlobRef {
+    /// Creates a new [`BlobRef`] from a valid hex representation of the sha256 hash.
+    ///
+    /// # Errors
+    ///
+    /// The method will return a [`Error::InvalidRef`] if the input string
+    /// - has `len() != 64`
+    /// - contains any char except lowercase letters and digits
+    ///
+    /// # Examples
+    /// ```
+    /// # use rustore::BlobRef;
+    /// let blob_ref = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
+    /// assert!(blob_ref.is_ok())
+    /// ```
+    /// ```
+    /// # use rustore::BlobRef;
+    /// let blob_ref = BlobRef::new("a_short_hash");
+    /// assert!(blob_ref.is_err());
+    /// let blob_ref = BlobRef::new("....aninvalidhash.29bc64a9d3732b4b9035125fdb3285f5b6455778edca7");
+    /// assert!(blob_ref.is_err());
+    /// ```
+
+    pub fn new(value: &str) -> Result<BlobRef> {
+        lazy_static! {
+            static ref VALID_HASH_REGEX: Regex = Regex::new(r"^[a-z0-9]{64}$").unwrap();
+        }
+
+        if VALID_HASH_REGEX.is_match(value) {
+            Ok(BlobRef {
+                value: String::from(value),
+            })
+        } else {
+            Err(Error::InvalidRef)
+        }
+    }
+
+    /// Converts the blob's reference into a path relative to the root of the blob store.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use rustore::BlobRef;
+    /// let hash = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
+    /// let blob_ref = BlobRef::new(hash).unwrap();
+    /// assert_eq!(blob_ref.to_path().to_str().unwrap(), "f2/9b/c6/4a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de")
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function assumes that the `RUSTORE_DATA_PATH` environment variable has been
+    /// set to a valid path and panics otherwise.
+    pub fn to_path(&self) -> PathBuf {
+        PathBuf::from(&self.value[0..2])
+            .join(&self.value[2..4])
+            .join(&self.value[4..6])
+            .join(&self.value[6..])
+    }
+
+    /// Returns a string reference (hex representation of Sha256 hash) for the blob
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use rustore::BlobRef;
+    /// let hash = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
+    /// let blob_ref = BlobRef::new(hash).unwrap();
+    ///
+    /// assert_eq!(blob_ref.reference(), hash);
+    /// ```
+    pub fn reference(&self) -> &str {
+        &self.value
+    }
+}
+
+impl std::fmt::Display for BlobRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "BlobRef({})", &self.value[..10])
+    }
+}
+
 /// Struct for interacting with the blob store
 #[derive(Clone, Debug)]
 pub struct BlobStore {
@@ -292,103 +391,5 @@ impl BlobStore {
             size: metadata.len(),
             created: metadata.created()?.into(),
         })
-    }
-}
-/// Returns a [`BlobRef`] instance from a hasher
-///
-/// # Examples
-///
-/// ```
-/// # use sha2::{Digest, Sha256};
-/// # use rustore::BlobRef;
-/// let mut hasher = Sha256::new();
-/// hasher.update(b"hello world");
-/// let blob_ref = BlobRef::from(hasher);
-/// assert_eq!(blob_ref.reference(), "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9");
-/// ```
-impl From<Sha256> for BlobRef {
-    fn from(hasher: Sha256) -> Self {
-        BlobRef::new(&format!("{:x}", hasher.finalize())[..]).unwrap()
-    }
-}
-
-impl BlobRef {
-    /// Creates a new [`BlobRef`] from a valid hex representation of the sha256 hash.
-    ///
-    /// # Errors
-    ///
-    /// The method will return a [`Error::InvalidRef`] if the input string
-    /// - has `len() != 64`
-    /// - contains any char except lowercase letters and digits
-    ///
-    /// # Examples
-    /// ```
-    /// # use rustore::BlobRef;
-    /// let blob_ref = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
-    /// assert!(blob_ref.is_ok())
-    /// ```
-    /// ```
-    /// # use rustore::BlobRef;
-    /// let blob_ref = BlobRef::new("a_short_hash");
-    /// assert!(blob_ref.is_err());
-    /// let blob_ref = BlobRef::new("....aninvalidhash.29bc64a9d3732b4b9035125fdb3285f5b6455778edca7");
-    /// assert!(blob_ref.is_err());
-    /// ```
-
-    pub fn new(value: &str) -> Result<BlobRef> {
-        lazy_static! {
-            static ref VALID_HASH_REGEX: Regex = Regex::new(r"^[a-z0-9]{64}$").unwrap();
-        }
-
-        if VALID_HASH_REGEX.is_match(value) {
-            Ok(BlobRef {
-                value: String::from(value),
-            })
-        } else {
-            Err(Error::InvalidRef)
-        }
-    }
-
-    /// Converts the blob's reference into a path relative to the root of the blob store.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use rustore::BlobRef;
-    /// let hash = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
-    /// let blob_ref = BlobRef::new(hash).unwrap();
-    /// assert_eq!(blob_ref.to_path().to_str().unwrap(), "f2/9b/c6/4a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de")
-    /// ```
-    ///
-    /// # Panics
-    ///
-    /// This function assumes that the `RUSTORE_DATA_PATH` environment variable has been
-    /// set to a valid path and panics otherwise.
-    pub fn to_path(&self) -> PathBuf {
-        PathBuf::from(&self.value[0..2])
-            .join(&self.value[2..4])
-            .join(&self.value[4..6])
-            .join(&self.value[6..])
-    }
-
-    /// Returns a string reference (hex representation of Sha256 hash) for the blob
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use rustore::BlobRef;
-    /// let hash = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
-    /// let blob_ref = BlobRef::new(hash).unwrap();
-    ///
-    /// assert_eq!(blob_ref.reference(), hash);
-    /// ```
-    pub fn reference(&self) -> &str {
-        &self.value
-    }
-}
-
-impl std::fmt::Display for BlobRef {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "BlobRef({})", &self.value[..10])
     }
 }
