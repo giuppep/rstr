@@ -3,18 +3,13 @@
 #![allow(clippy::multiple_crate_versions, clippy::must_use_candidate)]
 //! `rustore` is a library for managing a content-addressable blob store.
 //!
+//! The [`BlobStore`] struct manages the interaction with the blob store.
 //! An entry in the blob store is represented by an instance of the struct [`BlobRef`].
 //!
 //! # Examples
 //!
-//! Before interacting with the blob store you must specify its path
-//!
-//! ```no_run
-//! std::env::set_var("RUSTORE_DATA_PATH", "path/to/blob/store");
-//! ```
-//!
 //! Add files or directories to the blob store:
-//! ```no_run
+//! ```
 //! use rustore::{BlobStore,BlobRef};
 //! use std::path::{Path, PathBuf};
 //!
@@ -22,8 +17,10 @@
 //! let n_threads: u8 = 8;
 //! let (blob_refs_with_paths, _): (Vec<(PathBuf, BlobRef)>, _) = blob_store.add_files(
 //!     &[
-//!         Path::new("/path/to/a/file.pdf"),
-//!         Path::new("/path/to/a/directory/"),
+//!         // Can add files
+//!         Path::new("tests/test_file.txt"),
+//!         // or directories
+//!         Path::new("tests/"),
 //!     ],
 //!     n_threads,
 //! );
