@@ -1,10 +1,9 @@
 use rustore::{BlobRef, BlobStore};
 use std::{io, io::Write};
-pub fn delete_blobs<'a, I>(hashes: I, interactive: bool)
+pub fn delete_blobs<'a, I>(blob_store: &BlobStore, hashes: I, interactive: bool)
 where
     I: Iterator<Item = &'a str>,
 {
-    let blob_store = BlobStore::new(std::env::var("RUSTORE_DATA_PATH").unwrap()).unwrap();
     for hash in hashes {
         let blob_ref = match BlobRef::new(&hash) {
             Ok(blob_ref) if !blob_store.exists(&blob_ref) => {
@@ -36,12 +35,10 @@ where
     }
 }
 
-pub fn check_blobs<'a, I>(hashes: I, show_metadata: bool)
+pub fn check_blobs<'a, I>(blob_store: &BlobStore, hashes: I, show_metadata: bool)
 where
     I: Iterator<Item = &'a str>,
 {
-    let blob_store = BlobStore::new(std::env::var("RUSTORE_DATA_PATH").unwrap()).unwrap();
-
     for hash in hashes {
         let blob_ref = if let Ok(blob_ref) = BlobRef::new(&hash) {
             blob_ref
