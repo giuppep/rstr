@@ -35,6 +35,7 @@ pub struct BlobMetadata {
     pub created: DateTime<Utc>,
 }
 
+/// Struct for interacting with the blob store
 #[derive(Clone, Debug)]
 pub struct BlobStore {
     root: PathBuf,
@@ -79,8 +80,9 @@ impl BlobStore {
     /// # Examples
     ///
     /// ```
-    /// # use rustore::BlobStore;
-    /// # use sha2::{Digest, Sha256};
+    /// use rustore::BlobStore;
+    /// use sha2::{Digest, Sha256};
+    ///
     /// let mut hasher = BlobStore::hasher();
     /// hasher.update(b"hello world");
     /// let result = hasher.finalize();
@@ -153,7 +155,7 @@ impl BlobStore {
     ///
     /// ```
     /// # use std::path::Path;
-    /// # use rustore::{BlobStore, BlobRef};
+    /// use rustore::{BlobStore, BlobRef};
     ///
     /// let blob_store = BlobStore::new("tests/test_data_store").unwrap();
     ///
@@ -205,11 +207,29 @@ impl BlobStore {
         (success, errors)
     }
 
+    /// Given a [`BlobRef`] it retrieves the associated file and returns it as a byte-array.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustore::{BlobStore, BlobRef};
+    ///
+    /// let blob_store = BlobStore::new("tests/test_data_store").unwrap();
+    /// let reference = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
+    /// let blob_ref = BlobRef::new(reference).unwrap();
+    ///
+    /// let content = blob_store.get(&blob_ref).unwrap();
+    ///
+    /// assert_eq!(content, &[
+    ///     84, 104, 105, 115, 32, 105, 115, 32, 97, 32, 116, 101, 115, 116, 32, 102, 105, 108,
+    ///     101, 46,
+    /// ]);
+    /// ```
     pub fn get(&self, blob_ref: &BlobRef) -> Result<Vec<u8>> {
         Ok(fs::read(&self.get_blob_file_path(blob_ref)?)?)
     }
 
-    /// Returns `true` if there is a file associated with the `BlobRef` in the blob store
+    /// Returns `true` if there is a file associated with the [`BlobRef`] in the blob store
     ///
     /// # Examples
     ///
@@ -226,7 +246,7 @@ impl BlobStore {
         dir.exists() && dir.read_dir().unwrap().next().is_some()
     }
 
-    /// Given a `BlobRef` it deletes the corresponding blob from the blob store
+    /// Given a [`BlobRef`] it deletes the corresponding blob from the blob store
     ///
     /// # Examples
     ///
@@ -247,7 +267,7 @@ impl BlobStore {
         Ok(fs::remove_dir_all(self.get_blob_path(blob_ref))?)
     }
 
-    /// Given a `BlobRef` returns the metadata relative to the referenced blob. For more
+    /// Given a [`BlobRef`] returns the metadata relative to the referenced blob. For more
     /// details on the metadata returned see `BlobMetadata`.
     ///
     /// The mime type is inferred from the file's magic number as a string.
@@ -274,7 +294,7 @@ impl BlobStore {
         })
     }
 }
-/// Returns a `BlobRef` instance from a hasher
+/// Returns a [`BlobRef`] instance from a hasher
 ///
 /// # Examples
 ///
@@ -293,7 +313,7 @@ impl From<Sha256> for BlobRef {
 }
 
 impl BlobRef {
-    /// Creates a new `BlobRef` from a valid hex representation of the sha256 hash.
+    /// Creates a new [`BlobRef`] from a valid hex representation of the sha256 hash.
     ///
     /// # Errors
     ///
