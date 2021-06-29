@@ -102,8 +102,9 @@ impl Settings {
 
 impl ServerSettings {
     /// Create all directories definied in the current configuration.
-    pub fn create_dirs(&self) {
-        std::fs::create_dir_all(&self.tmp_directory).unwrap();
-        std::fs::create_dir_all(&self.token_store_path.parent().unwrap()).unwrap();
+    pub fn create_dirs(&self) -> std::io::Result<()> {
+        std::fs::create_dir_all(&self.tmp_directory)?;
+        std::fs::create_dir_all(&self.token_store_path.parent().unwrap())?;
+        Ok(())
     }
 }
