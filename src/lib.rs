@@ -49,5 +49,5 @@
 //! assert_eq!(metadata.mime_type, "text/plain");
 //! ```
 
-mod blob;
-pub use blob::{BlobMetadata, BlobRef, BlobStore, Error, Result};
+mod blob_store;
+pub use blob_store::{BlobMetadata, BlobRef, BlobStore, Error, Result};
