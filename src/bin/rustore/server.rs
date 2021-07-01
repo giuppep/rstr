@@ -92,7 +92,7 @@ async fn delete_blob(
     let blob_store = BlobStore::new(&data.data_store_dir).unwrap();
 
     match blob_store.delete(&blob_ref) {
-        Ok(_) => HttpResponse::Ok().body(""),
+        Ok(_) => HttpResponse::NoContent().finish(),
         Err(Error::BlobNotFound) => {
             return HttpResponse::NotFound().json(ErrorResponse::new(
                 "BlobNotFound",
