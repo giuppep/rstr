@@ -1,0 +1,179 @@
+openapi: "3.0.2"
+info:
+  title: Rustore
+  version: "1.0"
+servers:
+  - url: https://my-rustore.rs/v1
+
+components:
+  securitySchemes:
+    name:
+      type: apiKey
+      name: X-Auth-Token
+      in: header
+  schemas:
+    # Schema for error response body
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+  responses:
+    NotFound:
+      description: The blob was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: NotFound
+            message: "Could not find blob corresponding to {blobRef}"
+    Unauthorized:
+      description: The API key was not specified or was not valid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: InvalidToken
+            message: "Unauthorized: the provided authentication token does not match our records."
+    InvalidReference:
+      description: The provided reference is not valid (e.g. incorrect length or contains unallowed characters)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: InvalidReference
+            message: "Error: Invalid reference. Reference must have 64 alphanumerical characters."
+  headers:
+    blobSize:
+      description: The size of the blob in bytes
+      schema:
+        type: integer
+    blobMime:
+      description: The mime type of the file
+      schema:
+        type: string
+      example: "image/png"
+    blobFilename:
+      description: The filename of the blob
+      schema:
+        type: string
+      example: "file.png"
+    blobCreated:
+      description: The UTC timestamp of when the blob was created in ISO format
+      schema:
+        type: string
+        format: date-time
+      example: "2021-06-09T19:29:05.856119481+00:00"
+
+paths:
+  /status:
+    get:
+      description: Check the status of the server
+      responses:
+        "200":
+          description: The rustore server is running
+
+  /blobs:
+    post:
+      description: Add a file to the blob store
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de"
+
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+
+  /blobs/{blobRef}:
+    parameters:
+      - in: path
+        name: blobRef
+        schema:
+          type: string
+        example: f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de
+        required: true
+        description: Unique reference to the blob (its sha256 hash)
+    get:
+      description: Retrieve a blob from the blob store
+      responses:
+        "200":
+          description: OK
+          headers:
+            content-length:
+              $ref: "#/components/headers/blobSize"
+            content-type:
+              $ref: "#/components/headers/blobMime"
+            filename:
+              $ref: "#/components/headers/blobFilename"
+            created:
+              $ref: "#/components/headers/blobCreated"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: string
+              example: <BYTE STREAM>
+        "400":
+          $ref: "#/components/responses/InvalidReference"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    head:
+      description: Retrieve a blob's metadata
+      responses:
+        "200":
+          description: OK
+          headers:
+            content-length:
+              $ref: "#/components/headers/blobSize"
+            content-type:
+              $ref: "#/components/headers/blobMime"
+            filename:
+              $ref: "#/components/headers/blobFilename"
+            created:
+              $ref: "#/components/headers/blobCreated"
+        "400":
+          description: Invalid blob reference
+        "401":
+          description: Unauthorized
+        "404":
+          description: The blob was not found
+
+    delete:
+      description: Delete a blob
+      responses:
+        "204":
+          description: The blob was deleted successfully
+        "400":
+          $ref: "#/components/responses/InvalidReference"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
