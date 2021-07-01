@@ -17,15 +17,15 @@ use tempfile::NamedTempFile;
 #[derive(Serialize)]
 struct ErrorResponse {
     /// The name of the error, can be used to match to error classes in client.
-    name: String,
+    error: String,
     /// A message providing more detail on the error.
     message: String,
 }
 
 impl ErrorResponse {
-    fn new(name: &str, message: &str) -> Self {
+    fn new(error: &str, message: &str) -> Self {
         ErrorResponse {
-            name: String::from(name),
+            error: String::from(error),
             message: String::from(message),
         }
     }
