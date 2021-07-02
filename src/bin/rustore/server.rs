@@ -8,7 +8,7 @@ use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Re
 use env_logger::Env;
 use futures::future::{ok, Either};
 use futures::{StreamExt, TryStreamExt};
-use rustore::{BlobRef, BlobStore, Error};
+use rustore::{BlobRef, BlobStore};
 use sha2::Digest;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -25,10 +25,7 @@ async fn get_blob(
 ) -> impl Responder {
     let blob_ref = match BlobRef::new(&hash) {
         Ok(blob_ref) => blob_ref,
-        Err(e) => {
-            return HttpResponse::BadRequest()
-                .json(ErrorResponse::new("InvalidReference", &e.to_string()));
-        }
+        Err(e) => return HttpResponse::from(ErrorResponse::from(e)),
     };
 
     let blob_store = BlobStore::new(&data.data_store_dir).unwrap();
@@ -49,12 +46,7 @@ async fn get_blob(
                 .header("content-disposition", "attachment")
                 .body(content)
         }
-        Err(Error::BlobNotFound) => HttpResponse::NotFound().json(ErrorResponse::new(
-            "BlobNotFound",
-            &format!("Could not find blob corresponding to {}", &hash),
-        )),
-        Err(_) => HttpResponse::InternalServerError()
-            .json(ErrorResponse::new("ServerError", "Cannot open the file")),
+        Err(e) => return HttpResponse::from(ErrorResponse::from(e)),
     }
 }
 
@@ -66,8 +58,7 @@ async fn delete_blob(
     let blob_ref = match BlobRef::new(&hash) {
         Ok(blob_ref) => blob_ref,
         Err(e) => {
-            return HttpResponse::BadRequest()
-                .json(ErrorResponse::new("InvalidReference", &e.to_string()));
+            return HttpResponse::from(ErrorResponse::from(e));
         }
     };
 
@@ -75,14 +66,7 @@ async fn delete_blob(
 
     match blob_store.delete(&blob_ref) {
         Ok(_) => HttpResponse::NoContent().finish(),
-        Err(Error::BlobNotFound) => {
-            return HttpResponse::NotFound().json(ErrorResponse::new(
-                "BlobNotFound",
-                &format!("Could not find blob corresponding to {}", &hash),
-            ))
-        }
-        Err(_) => HttpResponse::InternalServerError()
-            .json(ErrorResponse::new("ServerError", "Cannot delete the file")),
+        Err(e) => return HttpResponse::from(ErrorResponse::from(e)),
     }
 }
 
@@ -158,8 +142,8 @@ pub async fn start_server(settings: Settings) -> std::io::Result<()> {
                     Some(auth_token) if validate_token(auth_token.to_str().unwrap()) => {
                         Either::Left(srv.call(req))
                     }
-                    _ => Either::Right(ok(req.into_response(HttpResponse::Unauthorized().json(
-                        ErrorResponse::new("InvalidToken","Unauthorized: the provided authentication token does not match our records."),
+                    _ => Either::Right(ok(req.into_response(HttpResponse::from(
+                        ErrorResponse::new("InvalidToken","Unauthorized: the provided authentication token does not match our records.", 401),
                     )))),
                 }
             })

@@ -1,5 +1,6 @@
+use actix_web::HttpResponse;
+use rustore::Error;
 use serde::Serialize;
-
 /// Struct representing the json payload returned to the user upon error
 #[derive(Serialize)]
 pub struct ErrorResponse {
@@ -7,13 +8,38 @@ pub struct ErrorResponse {
     error: String,
     /// A message providing more detail on the error.
     message: String,
+    /// The HTTP status code of the error. Used for converting to a response.
+    #[serde(skip_serializing)]
+    status_code: u16,
 }
 
 impl ErrorResponse {
-    pub fn new(error: &str, message: &str) -> Self {
+    pub fn new(error: &str, message: &str, code: u16) -> Self {
         ErrorResponse {
-            error: String::from(error),
-            message: String::from(message),
+            error: error.into(),
+            message: message.into(),
+            status_code: code.into(),
+        }
+    }
+}
+
+impl From<Error> for ErrorResponse {
+    fn from(err: Error) -> ErrorResponse {
+        match err {
+            Error::BlobNotFound => ErrorResponse::new("BlobNotFound", &err.to_string(), 404),
+            Error::InvalidRef => ErrorResponse::new("InvalidReference", &err.to_string(), 400),
+            Error::Io(_) => ErrorResponse::new("IO", &err.to_string(), 500),
+        }
+    }
+}
+
+impl From<ErrorResponse> for HttpResponse {
+    fn from(err: ErrorResponse) -> Self {
+        match err.status_code {
+            404 => HttpResponse::NotFound().json(err),
+            400 => HttpResponse::BadRequest().json(err),
+            401 => HttpResponse::Unauthorized().json(err),
+            _ => HttpResponse::InternalServerError().json(err),
         }
     }
 }
