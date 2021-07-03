@@ -8,8 +8,7 @@ use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Re
 use env_logger::Env;
 use futures::future::{ok, Either};
 use futures::{StreamExt, TryStreamExt};
-use rustore::{BlobRef, BlobStore};
-use sha2::Digest;
+use rustore::{BlobRef, BlobStore, Sha2Digest};
 use std::io::Write;
 use tempfile::NamedTempFile;
 
@@ -35,15 +34,10 @@ async fn get_blob(
         Ok(content) => {
             let metadata = blob_store.metadata(&blob_ref).unwrap();
             HttpResponse::Ok()
-                .content_type(metadata.mime_type)
+                .header("created", metadata.created_str())
                 .header("filename", metadata.filename)
-                .header(
-                    "created",
-                    metadata
-                        .created
-                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, false),
-                )
                 .header("content-disposition", "attachment")
+                .content_type(metadata.mime_type)
                 .body(content)
         }
         Err(e) => return HttpResponse::from(ErrorResponse::from(e)),
@@ -171,7 +165,7 @@ mod tests {
     #[actix_rt::test]
     async fn test_get_blob() {
         let settings = Settings {
-            data_store_dir: "tests/test_data_store".into(),
+            data_store_dir: "../tests/test_data_store".into(),
             ..Settings::default()
         };
         let mut app = test::init_service(App::new().data(settings).configure(init_routes)).await;
@@ -208,7 +202,7 @@ mod tests {
     #[actix_rt::test]
     async fn test_get_errors() {
         let settings = Settings {
-            data_store_dir: "tests/test_data_store".into(),
+            data_store_dir: "../tests/test_data_store".into(),
             ..Settings::default()
         };
         let mut app = test::init_service(App::new().data(settings).configure(init_routes)).await;

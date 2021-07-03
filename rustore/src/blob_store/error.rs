@@ -25,7 +25,7 @@ pub enum Error {
     /// ```
     /// use rustore::{BlobRef, BlobStore, Error};
     ///
-    /// let blob_store = BlobStore::new("tests/test_data_store").unwrap();
+    /// let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
     /// let blob_ref = BlobRef::new("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9").unwrap();
     ///
     /// assert!(!blob_store.exists(&blob_ref));

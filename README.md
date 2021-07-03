@@ -80,7 +80,7 @@ Note that you can also mix files and directories in the above.
 
 For each file added `rustore` will print its hash and its original path to stdout, e.g.
 ```text
-f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de        tests/test_file.txt
+f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de        ../tests/test_file.txt
 ```
 #### Check files
 To check whether a file is present in the blob store, simply pass its reference to `rustore check`

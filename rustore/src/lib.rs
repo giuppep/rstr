@@ -13,12 +13,12 @@
 //! use rustore::{BlobStore,BlobRef};
 //! use std::path::{Path, PathBuf};
 //!
-//! let blob_store = BlobStore::new("tests/test_data_store").unwrap();
+//! let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
 //! let n_threads: u8 = 8;
 //! let (blob_refs_with_paths, _): (Vec<(PathBuf, BlobRef)>, _) = blob_store.add_files(
 //!     &[
 //!         // Can add files
-//!         Path::new("tests/test_file.txt"),
+//!         Path::new("../tests/test_file.txt"),
 //!         // or directories
 //!         Path::new("tests/"),
 //!     ],
@@ -32,7 +32,7 @@
 //! ```
 //! use rustore::{BlobStore, BlobRef};
 //!
-//! let blob_store = BlobStore::new("tests/test_data_store").unwrap();
+//! let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
 //!
 //! // Retrieve a blob from the blob store
 //! let reference = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
@@ -51,3 +51,4 @@
 
 mod blob_store;
 pub use blob_store::{BlobMetadata, BlobRef, BlobStore, Error, Result};
+pub use sha2::Digest as Sha2Digest;

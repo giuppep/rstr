@@ -1,0 +1,23 @@
+[package]
+name = "rustore"
+version = "0.1.0"
+authors = ["Giuseppe Papallo <giuseppe@papallo.it>"]
+edition = "2018"
+description = "A library for managing a content-addressable blob store"
+readme = "README.md"
+repository = "https://github.com/giuppep/rustore"
+license-file = "LICENSE"
+categories = ["filesystem"]
+keywords = ["blob-store"]
+
+[dependencies]
+sha2 = "0.9.3"
+tree_magic_mini = "3.0.0"
+ignore = "0.4"
+chrono = "0.4.19"
+indicatif = { version="0.16.2", optional=true }
+regex = "1.5.4"
+lazy_static = "1.4.0"
+
+[features]
+progress_bar = ["indicatif"]
