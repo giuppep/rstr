@@ -49,6 +49,10 @@
 //! assert_eq!(metadata.mime_type, "text/plain");
 //! ```
 
-mod blob_store;
-pub use blob_store::{BlobMetadata, BlobRef, BlobStore, Error, Result};
+mod error;
+mod models;
+mod utils;
+
+pub use error::{Error, Result};
+pub use models::{BlobMetadata, BlobRef, BlobStore};
 pub use sha2::Digest as Sha2Digest;
