@@ -1,6 +1,9 @@
 use super::error::{Error, Result};
-use super::utils::{collect_file_paths, progress_bar};
+use super::utils::collect_file_paths;
+#[cfg(feature = "progress_bar")]
+use super::utils::progress_bar;
 use chrono::{offset::Utc, DateTime};
+#[cfg(feature = "progress_bar")]
 use indicatif::ProgressIterator;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -294,9 +297,12 @@ impl BlobStore {
 
         drop(tx);
 
-        let pb = progress_bar(paths.len() as u64);
-        let (success, errors): (Vec<_>, Vec<_>) =
-            rx.iter().progress_with(pb).partition(|(_, b)| b.is_ok());
+        let rx_iter = rx.iter();
+
+        #[cfg(feature = "progress_bar")]
+        let rx_iter = rx_iter.progress_with(progress_bar(paths.len() as u64));
+
+        let (success, errors): (Vec<_>, Vec<_>) = rx_iter.partition(|(_, b)| b.is_ok());
 
         let success = success.into_iter().map(|(p, b)| (p, b.unwrap())).collect();
         let errors = errors

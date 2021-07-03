@@ -19,7 +19,7 @@ tree_magic_mini = "3.0.0"
 tempfile = "3"
 ignore = "0.4"
 chrono = "0.4.19"
-indicatif = "0.16.2"
+indicatif = { version="0.16.2", optional=true }
 regex = "1.5.4"
 lazy_static = "1.4.0"
 # bin dependencies
@@ -36,3 +36,7 @@ uuid = { version="0.8", features=["v4"] }
 directories = "3.0.2"
 serde = { version="1.0.126", features=["derive"] }
 toml = "0.5.8"
+
+
+[features]
+progress_bar = ["indicatif"]

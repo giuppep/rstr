@@ -1,4 +1,5 @@
 use ignore::{WalkBuilder, WalkState};
+#[cfg(feature = "progress_bar")]
 use indicatif::{ProgressBar, ProgressStyle};
 use std::path::Path;
 use std::path::PathBuf;
@@ -35,6 +36,7 @@ pub fn collect_file_paths(path: &Path) -> Vec<PathBuf> {
     paths
 }
 
+#[cfg(feature = "progress_bar")]
 pub fn progress_bar(length: u64) -> ProgressBar {
     let pb = ProgressBar::new(length);
     pb.set_style(
