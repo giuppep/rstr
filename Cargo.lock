@@ -1627,7 +1627,6 @@ version = "0.1.0"
 dependencies = [
  "actix-multipart",
  "actix-rt 2.2.0",
- "actix-service",
  "actix-web",
  "clap",
  "directories",
