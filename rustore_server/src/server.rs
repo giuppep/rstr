@@ -2,7 +2,7 @@ use crate::error::ErrorResponse;
 use crate::security::validate_token;
 use crate::settings::Settings;
 use actix_multipart::Multipart;
-use actix_service::Service;
+use actix_web::dev::Service;
 use actix_web::middleware::Logger;
 use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Responder};
 use env_logger::Env;
