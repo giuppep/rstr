@@ -40,7 +40,7 @@ async fn get_blob(
                 .content_type(metadata.mime_type)
                 .body(content)
         }
-        Err(e) => return HttpResponse::from(ErrorResponse::from(e)),
+        Err(e) => HttpResponse::from(ErrorResponse::from(e)),
     }
 }
 
@@ -60,7 +60,7 @@ async fn delete_blob(
 
     match blob_store.delete(&blob_ref) {
         Ok(_) => HttpResponse::NoContent().finish(),
-        Err(e) => return HttpResponse::from(ErrorResponse::from(e)),
+        Err(e) => HttpResponse::from(ErrorResponse::from(e)),
     }
 }
 

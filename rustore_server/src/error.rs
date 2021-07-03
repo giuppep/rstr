@@ -18,7 +18,7 @@ impl ErrorResponse {
         ErrorResponse {
             error: error.into(),
             message: message.into(),
-            status_code: code.into(),
+            status_code: code,
         }
     }
 }
