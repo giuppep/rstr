@@ -132,7 +132,7 @@ curl -i -X DELETE https://my-rustore-url/blobs/f29bc64a9d3732b4b9035125fdb3285f5
 example response
 
 ```http
-HTTP/1.1 200 OK
+HTTP/1.1 204 NO CONTENT
 content-length: 0
 date: Wed, 09 Jun 2021 19:34:16 GMT
 ```
