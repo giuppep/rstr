@@ -160,10 +160,10 @@ impl BlobStore {
     /// ```
     /// use rustore::BlobStore;
     ///
-    /// let blob_store = BlobStore::new("tests/test_data_store");
+    /// let blob_store = BlobStore::new("../tests/test_data_store");
     /// assert!(blob_store.is_ok());
     ///
-    /// let blob_store = BlobStore::new("tests/test_file.txt");
+    /// let blob_store = BlobStore::new("../tests/test_file.txt");
     /// assert!(blob_store.is_err());
     /// ```
     pub fn new<P: AsRef<Path>>(path: P) -> Result<BlobStore> {
@@ -219,9 +219,9 @@ impl BlobStore {
     /// ```
     /// use rustore::{BlobStore, BlobRef};
     /// use std::path::PathBuf;
-    /// let blob_store = BlobStore::new("tests/test_data_store/").unwrap();
+    /// let blob_store = BlobStore::new("../tests/test_data_store/").unwrap();
     ///
-    /// let blob_ref: BlobRef = blob_store.add("tests/test_file.txt").unwrap();
+    /// let blob_ref: BlobRef = blob_store.add("../tests/test_file.txt").unwrap();
     /// assert!(blob_store.exists(&blob_ref));
     /// assert_eq!(blob_ref.reference(), "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
     /// ```
@@ -259,9 +259,9 @@ impl BlobStore {
     /// # use std::path::Path;
     /// use rustore::{BlobStore, BlobRef};
     ///
-    /// let blob_store = BlobStore::new("tests/test_data_store").unwrap();
+    /// let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
     ///
-    /// let paths = [Path::new("tests/test_file.txt")];
+    /// let paths = [Path::new("../tests/test_file.txt")];
     /// let threads: u8 = 8;
     /// let (blob_refs_with_paths, errors) = blob_store.add_files(&paths[..], threads);
     /// let blob_refs: Vec<BlobRef> = blob_refs_with_paths.into_iter().map(|(_, b)| b).collect();
@@ -319,7 +319,7 @@ impl BlobStore {
     /// ```
     /// use rustore::{BlobStore, BlobRef};
     ///
-    /// let blob_store = BlobStore::new("tests/test_data_store").unwrap();
+    /// let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
     /// let reference = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
     /// let blob_ref = BlobRef::new(reference).unwrap();
     ///
@@ -341,7 +341,7 @@ impl BlobStore {
     /// ```
     /// use rustore::{BlobStore, BlobRef};
     ///
-    /// let blob_store = BlobStore::new("tests/test_data_store/").unwrap();
+    /// let blob_store = BlobStore::new("../tests/test_data_store/").unwrap();
     /// let blob_ref = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de").unwrap();
     ///
     /// assert!(blob_store.exists(&blob_ref))
@@ -397,5 +397,12 @@ impl BlobStore {
             size: metadata.len(),
             created: metadata.created()?.into(),
         })
+    }
+}
+
+impl BlobMetadata {
+    pub fn created_str(&self) -> String {
+        self.created
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, false)
     }
 }
