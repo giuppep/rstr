@@ -6,15 +6,15 @@ use std::io::Write;
 use std::path::PathBuf;
 
 fn project_dirs() -> ProjectDirs {
-    ProjectDirs::from("", "", "rustore").unwrap()
+    ProjectDirs::from("", "", "rstr").unwrap()
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ServerSettings {
-    /// Port on which to run the rustore server
+    /// Port on which to run the rstr server
     pub port: u16,
-    /// Level of logging for rustore server
+    /// Level of logging for rstr server
     pub log_level: log::Level,
     /// Path to a directory where the server can store temporary files
     pub tmp_directory: PathBuf,
@@ -37,7 +37,7 @@ impl Default for ServerSettings {
         ServerSettings {
             port: 3123,
             log_level: log::Level::Info,
-            tmp_directory: std::env::temp_dir().join("rustore"),
+            tmp_directory: std::env::temp_dir().join("rstr"),
             token_store_path,
         }
     }
@@ -56,15 +56,15 @@ impl Default for Settings {
 impl Settings {
     /// Default path for the configuration file.
     fn default_config_path() -> PathBuf {
-        project_dirs().config_dir().join("rustore.toml")
+        project_dirs().config_dir().join("rstr.toml")
     }
 
-    /// Load the rustore configuration from a `toml` file.
+    /// Load the rstr configuration from a `toml` file.
     ///
     /// # Examples
     /// ```no_run
     /// # use std::path::PathBuf;
-    /// let config_file = PathBuf::from("/home/giuppep/.config/rustore.toml")
+    /// let config_file = PathBuf::from("/home/giuppep/.config/rstr.toml")
     /// let settings = Settings::from_file(config_file).unwrap()
     /// ```
     ///
@@ -86,7 +86,7 @@ impl Settings {
         }
     }
 
-    /// Save the rustore configuration to a file. If the path is not specified, it
+    /// Save the rstr configuration to a file. If the path is not specified, it
     /// saves it to the default path.
     pub fn to_file(&self, path: Option<PathBuf>) -> std::io::Result<()> {
         let path = path.unwrap_or(Settings::default_config_path());

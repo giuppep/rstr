@@ -1,2 +1,2 @@
 [workspace]
-members = ["rustore", "rustore_server"]
+members = ["rstr", "rstr_server"]

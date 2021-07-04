@@ -44,7 +44,7 @@ pub struct BlobMetadata {
 ///
 /// ```
 /// # use sha2::{Digest, Sha256};
-/// # use rustore::BlobRef;
+/// # use rstr::BlobRef;
 /// let mut hasher = Sha256::new();
 /// hasher.update(b"hello world");
 /// let blob_ref = BlobRef::from(hasher);
@@ -67,12 +67,12 @@ impl BlobRef {
     ///
     /// # Examples
     /// ```
-    /// # use rustore::BlobRef;
+    /// # use rstr::BlobRef;
     /// let blob_ref = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de");
     /// assert!(blob_ref.is_ok())
     /// ```
     /// ```
-    /// # use rustore::BlobRef;
+    /// # use rstr::BlobRef;
     /// let blob_ref = BlobRef::new("a_short_hash");
     /// assert!(blob_ref.is_err());
     /// let blob_ref = BlobRef::new("....aninvalidhash.29bc64a9d3732b4b9035125fdb3285f5b6455778edca7");
@@ -98,16 +98,11 @@ impl BlobRef {
     /// # Examples
     ///
     /// ```
-    /// # use rustore::BlobRef;
+    /// # use rstr::BlobRef;
     /// let hash = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
     /// let blob_ref = BlobRef::new(hash).unwrap();
     /// assert_eq!(blob_ref.to_path().to_str().unwrap(), "f2/9b/c6/4a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de")
     /// ```
-    ///
-    /// # Panics
-    ///
-    /// This function assumes that the `RUSTORE_DATA_PATH` environment variable has been
-    /// set to a valid path and panics otherwise.
     pub fn to_path(&self) -> PathBuf {
         PathBuf::from(&self.value[0..2])
             .join(&self.value[2..4])
@@ -120,7 +115,7 @@ impl BlobRef {
     /// # Examples
     ///
     /// ```
-    /// # use rustore::BlobRef;
+    /// # use rstr::BlobRef;
     /// let hash = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
     /// let blob_ref = BlobRef::new(hash).unwrap();
     ///
@@ -158,7 +153,7 @@ impl BlobStore {
     /// # Examples
     ///
     /// ```
-    /// use rustore::BlobStore;
+    /// use rstr::BlobStore;
     ///
     /// let blob_store = BlobStore::new("../tests/test_data_store");
     /// assert!(blob_store.is_ok());
@@ -182,7 +177,7 @@ impl BlobStore {
     /// # Examples
     ///
     /// ```
-    /// use rustore::BlobStore;
+    /// use rstr::BlobStore;
     /// use sha2::{Digest, Sha256};
     ///
     /// let mut hasher = BlobStore::hasher();
@@ -217,7 +212,7 @@ impl BlobStore {
     /// # Examples
     ///
     /// ```
-    /// use rustore::{BlobStore, BlobRef};
+    /// use rstr::{BlobStore, BlobRef};
     /// use std::path::PathBuf;
     /// let blob_store = BlobStore::new("../tests/test_data_store/").unwrap();
     ///
@@ -257,7 +252,7 @@ impl BlobStore {
     ///
     /// ```
     /// # use std::path::Path;
-    /// use rustore::{BlobStore, BlobRef};
+    /// use rstr::{BlobStore, BlobRef};
     ///
     /// let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
     ///
@@ -317,7 +312,7 @@ impl BlobStore {
     /// # Examples
     ///
     /// ```
-    /// use rustore::{BlobStore, BlobRef};
+    /// use rstr::{BlobStore, BlobRef};
     ///
     /// let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
     /// let reference = "f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de";
@@ -339,7 +334,7 @@ impl BlobStore {
     /// # Examples
     ///
     /// ```
-    /// use rustore::{BlobStore, BlobRef};
+    /// use rstr::{BlobStore, BlobRef};
     ///
     /// let blob_store = BlobStore::new("../tests/test_data_store/").unwrap();
     /// let blob_ref = BlobRef::new("f29bc64a9d3732b4b9035125fdb3285f5b6455778edca72414671e0ca3b2e0de").unwrap();
@@ -356,7 +351,7 @@ impl BlobStore {
     /// # Examples
     ///
     /// ```no_run
-    /// # use rustore::{BlobStore, BlobRef};
+    /// # use rstr::{BlobStore, BlobRef};
     /// let blob_store = BlobStore::new("/path/to/blob/store").unwrap();
     ///
     /// let blob_ref = BlobRef::new("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9").unwrap();

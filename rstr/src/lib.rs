@@ -1,7 +1,7 @@
 #![deny(clippy::all, clippy::cargo)]
 #![warn(clippy::pedantic, clippy::missing_panics_doc)]
 #![allow(clippy::multiple_crate_versions, clippy::must_use_candidate)]
-//! `rustore` is a library for managing a content-addressable blob store.
+//! `rstr` is a library for managing a content-addressable blob store.
 //!
 //! The [`BlobStore`] struct manages the interaction with the blob store.
 //! An entry in the blob store is represented by an instance of the struct [`BlobRef`].
@@ -10,7 +10,7 @@
 //!
 //! Add files or directories to the blob store:
 //! ```
-//! use rustore::{BlobStore,BlobRef};
+//! use rstr::{BlobStore,BlobRef};
 //! use std::path::{Path, PathBuf};
 //!
 //! let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
@@ -30,7 +30,7 @@
 //! Retrieve a blob from the blob store
 //!
 //! ```
-//! use rustore::{BlobStore, BlobRef};
+//! use rstr::{BlobStore, BlobRef};
 //!
 //! let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
 //!

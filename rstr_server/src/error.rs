@@ -1,5 +1,5 @@
 use actix_web::HttpResponse;
-use rustore::Error;
+use rstr::Error;
 use serde::Serialize;
 /// Struct representing the json payload returned to the user upon error
 #[derive(Serialize)]

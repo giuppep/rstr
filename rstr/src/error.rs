@@ -9,7 +9,7 @@ pub enum Error {
     /// # Examples
     ///
     /// ```
-    /// use rustore::BlobRef;
+    /// use rstr::BlobRef;
     /// let err = BlobRef::new("invalid").unwrap_err();
     /// # // io::Error does not implement PartialEq
     /// // err == Error::InvalidRef
@@ -23,7 +23,7 @@ pub enum Error {
     /// # Examples
     ///
     /// ```
-    /// use rustore::{BlobRef, BlobStore, Error};
+    /// use rstr::{BlobRef, BlobStore, Error};
     ///
     /// let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
     /// let blob_ref = BlobRef::new("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9").unwrap();

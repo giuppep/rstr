@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use uuid::Uuid;
 
 fn token_store_path() -> PathBuf {
-    std::env::var("RUSTORE_TOKEN_STORE_PATH").unwrap().into()
+    std::env::var("RSTR_TOKEN_STORE_PATH").unwrap().into()
 }
 
 /// Generates a new API token and appends it to the list of valid tokens.
