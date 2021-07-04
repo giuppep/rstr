@@ -1,11 +1,11 @@
-# Rustore
-`rustore` is a library for managing a content-addressable blob store.
+# rstr
+`rstr` is a library for managing a content-addressable blob store.
 
 # Examples
 Add files or directories to the blob store:
 
 ```rust
-use rustore::{BlobStore,BlobRef};
+use rstr::{BlobStore,BlobRef};
 use std::path::{Path, PathBuf};
 let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
 let n_threads: u8 = 8;
@@ -23,7 +23,7 @@ let blob_refs: Vec<BlobRef> = blob_refs_with_paths.into_iter().map(|(_, b)| b).c
 
 Retrieve a blob from the blob store
 ```rust
-use rustore::{BlobStore, BlobRef};
+use rstr::{BlobStore, BlobRef};
 
 let blob_store = BlobStore::new("../tests/test_data_store").unwrap();
 

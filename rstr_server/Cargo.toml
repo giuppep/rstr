@@ -1,17 +1,17 @@
 [package]
-name = "rustore_server"
+name = "rstr_server"
 version = "0.1.0"
 authors = ["Giuseppe Papallo <giuseppe@papallo.it>"]
 edition = "2018"
 description = "A simple content addressable blob store with a web interface."
 readme = "../README.md"
-repository = "https://github.com/giuppep/rustore"
+repository = "https://github.com/giuppep/rstr"
 license-file = "../LICENSE"
 categories = ["filesystem"]
 keywords = ["blob-store"]
 
 [dependencies]
-rustore = { path="../rustore", features=["progress_bar"] }
+rstr = { path="../rstr", features=["progress_bar"] }
 tempfile = "3"
 clap = "2.33.0"
 actix-web = "3"

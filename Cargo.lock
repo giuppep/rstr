@@ -1600,16 +1600,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustc_version"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
-dependencies = [
- "semver",
-]
-
-[[package]]
-name = "rustore"
+name = "rstr"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -1622,7 +1613,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustore_server"
+name = "rstr_server"
 version = "0.1.0"
 dependencies = [
  "actix-multipart",
@@ -1633,12 +1624,21 @@ dependencies = [
  "env_logger",
  "futures",
  "log",
- "rustore",
+ "rstr",
  "sanitize-filename",
  "serde",
  "tempfile",
  "toml",
  "uuid",
+]
+
+[[package]]
+name = "rustc_version"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
+dependencies = [
+ "semver",
 ]
 
 [[package]]

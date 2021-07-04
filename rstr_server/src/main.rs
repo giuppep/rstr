@@ -6,7 +6,7 @@ mod settings;
 mod utils;
 use clap::value_t_or_exit;
 use cli::app;
-use rustore::{self, BlobStore, Result};
+use rstr::{self, BlobStore, Result};
 use security::generate_token;
 use settings::Settings;
 use std::path::PathBuf;

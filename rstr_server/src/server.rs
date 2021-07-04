@@ -8,7 +8,7 @@ use actix_web::{delete, get, post, route, web, App, HttpResponse, HttpServer, Re
 use env_logger::Env;
 use futures::future::{ok, Either};
 use futures::{StreamExt, TryStreamExt};
-use rustore::{BlobRef, BlobStore, Sha2Digest};
+use rstr::{BlobRef, BlobStore, Sha2Digest};
 use std::io::Write;
 use tempfile::NamedTempFile;
 

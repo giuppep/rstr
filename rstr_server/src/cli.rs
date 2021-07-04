@@ -3,7 +3,7 @@ use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 fn server_commands() -> App<'static, 'static> {
     SubCommand::with_name("server")
         .setting(AppSettings::SubcommandRequiredElseHelp)
-        .about("Commands for operating the rustore server.")
+        .about("Commands for operating the rstr server.")
         .subcommand(
             SubCommand::with_name("start")
                 .about("Starts the blob store server")
@@ -13,7 +13,7 @@ fn server_commands() -> App<'static, 'static> {
                         .required(false)
                         .takes_value(true)
                         .value_name("PORT")
-                        .env("RUSTORE_PORT")
+                        .env("RSTR_PORT")
                         .help("The port on which to run"),
                 )
                 .arg(
@@ -21,7 +21,7 @@ fn server_commands() -> App<'static, 'static> {
                         .long("log-level")
                         .takes_value(true)
                         .value_name("LEVEL")
-                        .env("RUSTORE_LOG_LEVEL")
+                        .env("RSTR_LOG_LEVEL")
                         .possible_values(&["info", "debug", "error"])
                         .help("The level of logging"),
                 )
@@ -31,14 +31,14 @@ fn server_commands() -> App<'static, 'static> {
                         .required(false)
                         .takes_value(true)
                         .value_name("PATH")
-                        .env("RUSTORE_TMP_DIRECTORY")
-                        .help("Path to a tmp folder for rustore"),
+                        .env("RSTR_TMP_DIRECTORY")
+                        .help("Path to a tmp folder for rstr"),
                 ),
         )
         .subcommand(SubCommand::with_name("generate-token").about("Generate an API Token."))
 }
 pub fn app() -> App<'static, 'static> {
-    App::new("rustore")
+    App::new("rstr")
         .version(crate_version!())
         .author(crate_authors!())
         .about("Simple content addressable blob store")
@@ -48,7 +48,7 @@ pub fn app() -> App<'static, 'static> {
                 .long("config")
                 .short("C")
                 .value_name("PATH")
-                .env("RUSTORE_CONFIG_PATH")
+                .env("RSTR_CONFIG_PATH")
                 .help("Optional path to a config file.")
                 .long_help(
                     "Optional path to a config file.
@@ -61,11 +61,11 @@ option in the CLI or using environment variables will override what is specified
         )
         .arg(
             Arg::with_name("data_store_path")
-                .env("RUSTORE_DATA_PATH")
+                .env("RSTR_DATA_PATH")
                 .long("data-store")
                 .short("d")
                 .value_name("PATH")
-                .help("Where rustore saves the blobs."),
+                .help("Where rstr saves the blobs."),
         )
         .subcommand(
             SubCommand::with_name("create-config")
