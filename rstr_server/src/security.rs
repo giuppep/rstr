@@ -1,35 +1,31 @@
 use std::fs::{File, OpenOptions};
 use std::io::{prelude::*, BufReader};
-use std::path::PathBuf;
+use std::path::Path;
 use uuid::Uuid;
 
-fn token_store_path() -> PathBuf {
-    std::env::var("RSTR_TOKEN_STORE_PATH").unwrap().into()
-}
-
 /// Generates a new API token and appends it to the list of valid tokens.
-pub fn generate_token() -> String {
+pub fn generate_token(token_store_path: &Path) -> String {
     let token = (*Uuid::new_v4()
         .to_simple()
         .encode_upper(&mut Uuid::encode_buffer()))
     .to_string();
-    save_token(&token);
+    save_token(&token, token_store_path);
     token
 }
 
 /// Appends a new token to the file containing the tokens.
-fn save_token(token: &str) {
+fn save_token(token: &str, token_store_path: &Path) {
     let mut file = OpenOptions::new()
         .append(true)
         .create(true)
-        .open(token_store_path())
+        .open(token_store_path)
         .expect("Can't open file.");
     writeln!(&mut file, "{}", token).unwrap();
 }
 
 /// Validates a token against a file containing a list of valid tokens.
-pub fn validate_token(token: &str) -> bool {
-    let file = match File::open(token_store_path()) {
+pub fn validate_token(token: &str, token_store_path: &Path) -> bool {
+    let file = match File::open(token_store_path) {
         Ok(file) => file,
         Err(_) => return false,
     };
