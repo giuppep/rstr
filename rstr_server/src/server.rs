@@ -34,10 +34,10 @@ async fn get_blob(
         Ok(content) => {
             let metadata = blob_store.metadata(&blob_ref).unwrap();
             HttpResponse::Ok()
-                .header("created", metadata.created_str())
-                .header("filename", metadata.filename)
+                .header("created", &metadata.created_str()[..])
+                .header("filename", &metadata.filename[..])
                 .header("content-disposition", "attachment")
-                .content_type(metadata.mime_type)
+                .content_type(&metadata.mime_type[..])
                 .body(content)
         }
         Err(e) => HttpResponse::from(ErrorResponse::from(e)),
