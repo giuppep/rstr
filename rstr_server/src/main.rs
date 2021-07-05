@@ -87,7 +87,7 @@ fn main() -> Result<()> {
             }
             server::start_server(settings).unwrap()
         } else if clap_matches.subcommand_matches("generate-token").is_some() {
-            let token = generate_token(&settings.server.token_store_path);
+            let token = generate_token(&settings.server.token_store_path)?;
             println!("{}", token);
         };
     };
