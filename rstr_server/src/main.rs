@@ -86,10 +86,8 @@ fn main() -> Result<()> {
                 settings.server.tmp_directory = tmp_directory.parse().unwrap()
             }
             server::start_server(settings).unwrap()
-        }
-
-        if clap_matches.subcommand_matches("generate-token").is_some() {
-            let token = generate_token();
+        } else if clap_matches.subcommand_matches("generate-token").is_some() {
+            let token = generate_token(&settings.server.token_store_path);
             println!("{}", token);
         };
     };

@@ -128,12 +128,13 @@ pub async fn start_server(settings: Settings) -> std::io::Result<()> {
     }
 
     HttpServer::new(move || {
+        let settings = settings.clone();
         App::new()
             .data(settings.clone())
-            .wrap_fn(|req, srv| {
+            .wrap_fn( move |req, srv| {
                 let auth_token = req.headers().get("X-Auth-Token");
                 match auth_token {
-                    Some(auth_token) if validate_token(auth_token.to_str().unwrap()) => {
+                    Some(auth_token) if validate_token(auth_token.to_str().unwrap(), &settings.server.token_store_path) => {
                         Either::Left(srv.call(req))
                     }
                     _ => Either::Right(ok(req.into_response(HttpResponse::from(
@@ -141,6 +142,7 @@ pub async fn start_server(settings: Settings) -> std::io::Result<()> {
                     )))),
                 }
             })
+
             .configure(init_routes)
             .wrap(Logger::new("%r %s %b bytes %D msecs"))
     })
