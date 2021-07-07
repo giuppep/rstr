@@ -19,7 +19,7 @@ jobs:
         if: env.RSTR_VERSION == ''
         run: |
           echo "RSTR_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          echo "version is: ${{ env.RSTR_VERSION }}"
+          echo "version is: $RSTR_VERSION"
       - name: Create GitHub release
         id: release
         uses: actions/create-release@v1
@@ -31,7 +31,8 @@ jobs:
 
   build-release:
     name: build-release
-    needs: ["create-release"]
+    needs:
+      - create-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
@@ -42,10 +43,6 @@ jobs:
             os: ubuntu-18.04
             rust: nightly
             target: x86_64-unknown-linux-musl
-          - build: linux-arm
-            os: ubuntu-18.04
-            rust: nightly
-            target: arm-unknown-linux-gnueabihf
           - build: macos
             os: macos-latest
             rust: nightly
@@ -66,7 +63,11 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Build release binary
-        run: cargo build --verbose --release --all-features --target ${{ matrix.target }}
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --verbose --release --all-features --target ${{ matrix.target }}
 
       - name: Build archive
         shell: bash
