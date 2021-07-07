@@ -39,7 +39,7 @@ jobs:
       matrix:
         build: [ubuntu, macos]
         include:
-          - build: linux
+          - build: ubuntu
             os: ubuntu-18.04
             rust: nightly
             target: x86_64-unknown-linux-musl
@@ -90,16 +90,16 @@ jobs:
           asset_name: ${{ env.ASSET }}
           asset_content_type: application/octet-stream
 
-  cargo-publish:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
+#   cargo-publish:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v2
+#         with:
+#           fetch-depth: 1
 
-      - name: Publish
-        env:
-          CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-        run: |
-          cd rstr/ && cargo publish --token $CRATES_IO_TOKEN
+#       - name: Publish
+#         env:
+#           CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+#         run: |
+#           cd rstr/ && cargo publish --token $CRATES_IO_TOKEN
