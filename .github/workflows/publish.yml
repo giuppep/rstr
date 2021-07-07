@@ -72,8 +72,8 @@ jobs:
       - name: Build archive
         shell: bash
         run: |
-          build_dir="rstr-${{ env.RSTR_VERSION }}-${{ matrix.target }}"
-          mkdir $build_dir
+          build_name="rstr-${{ env.RSTR_VERSION }}-${{ matrix.target }}"
+          mkdir $build_name
           cp {README.md,LICENSE} "$build_name/"
           cp "target/${{ matrix.target }}/release/rstr" "$build_name/"
           tar czf "$build_name.tar.gz" "$build_name"
