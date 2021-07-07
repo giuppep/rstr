@@ -10,6 +10,10 @@ license-file = "../LICENSE"
 categories = ["filesystem"]
 keywords = ["blob-store"]
 
+[[bin]]
+name = "rstr"
+path = "src/main.rs"
+
 [dependencies]
 rstr = { path="../rstr", features=["progress_bar"] }
 tempfile = "3"
