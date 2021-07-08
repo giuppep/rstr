@@ -9,4 +9,3 @@ updates:
   commit-message:
       prefix: "cargo"
       include: "scope"
-   
