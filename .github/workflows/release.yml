@@ -38,12 +38,16 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        build: [ubuntu, macos]
+        build: [linux, macos]
         include:
-          - build: ubuntu
+          - build: linux
             os: ubuntu-18.04
             rust: nightly
             target: x86_64-unknown-linux-musl
+          - build: linux-arm
+            os: ubuntu-18.04
+            rust: nightly
+            target: arm-unknown-linux-gnueabihf
           - build: macos
             os: macos-latest
             rust: nightly
@@ -69,6 +73,9 @@ jobs:
           use-cross: true
           command: build
           args: --verbose --release --all-features --target ${{ matrix.target }}
+      
+      - name: Strip release binary (linux and macos)
+        run: strip "target/${{ matrix.target }}/release/rstr"
 
       - name: Build archive
         shell: bash
@@ -89,17 +96,3 @@ jobs:
           asset_path: ${{ env.ASSET }}
           asset_name: ${{ env.ASSET }}
           asset_content_type: application/octet-stream
-
-#   cargo-publish:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v2
-#         with:
-#           fetch-depth: 1
-
-#       - name: Publish
-#         env:
-#           CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-#         run: |
-#           cd rstr/ && cargo publish --token $CRATES_IO_TOKEN
