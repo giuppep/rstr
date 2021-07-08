@@ -20,7 +20,7 @@
 //!         // Can add files
 //!         Path::new("../tests/test_file.txt"),
 //!         // or directories
-//!         Path::new("tests/"),
+//!         Path::new("../tests/"),
 //!     ],
 //!     n_threads,
 //! );
