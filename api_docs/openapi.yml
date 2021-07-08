@@ -3,14 +3,25 @@ info:
   title: rstr
   version: "1.0"
 servers:
-  - url: https://my-rstr.rs/v1
+  - url: "http://localhost:{port}/"
+    variables:
+      port:
+        default: "3123"
+  - url: "https://{server}/"
+    variables:
+      server:
+        default: rstr.example.com
+
+security:
+  - ApiKeyAuth: []
 
 components:
   securitySchemes:
-    name:
+    ApiKeyAuth:
       type: apiKey
-      name: X-Auth-Token
       in: header
+      name: X-Auth-Token
+
   schemas:
     # Schema for error response body
     Error:
