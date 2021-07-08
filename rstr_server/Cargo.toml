@@ -15,7 +15,7 @@ name = "rstr"
 path = "src/main.rs"
 
 [dependencies]
-rstr = { path="../rstr", features=["progress_bar"] }
+rstr = { version="0.1.0", path="../rstr", features=["progress_bar"] }
 tempfile = "3"
 clap = "2.33.0"
 actix-web = "3"
