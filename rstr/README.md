@@ -14,7 +14,7 @@ let (blob_refs_with_paths, _): (Vec<(PathBuf, BlobRef)>, _) = blob_store.add_fil
         // Can add files
         Path::new("../tests/test_file.txt"),
         // or directories
-        Path::new("tests/"),
+        Path::new("../tests/"),
     ],
     n_threads,
 );
