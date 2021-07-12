@@ -6,7 +6,7 @@ on:
     branches:
       - $default-branch
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   create-release:
@@ -38,7 +38,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        build: [linux, macos]
+        build: [linux, linux-arm, macos, deb]
         include:
           - build: linux
             os: ubuntu-18.04
@@ -52,6 +52,10 @@ jobs:
             os: macos-latest
             rust: nightly
             target: x86_64-apple-darwin
+          - build: deb
+            os: ubuntu-18.04
+            rust: nightly
+            target: x86_64-unknown-linux-musl
 
     steps:
       - name: Checkout repository
@@ -67,18 +71,20 @@ jobs:
           override: true
           target: ${{ matrix.target }}
 
-      - name: Build release binary
+      - name: Build release binaryls
+        if: matrix.build != 'deb'
         uses: actions-rs/cargo@v1
         with:
           use-cross: true
           command: build
           args: --verbose --release --all-features --target ${{ matrix.target }}
-      
+
       - name: Strip release binary (linux and macos)
         if: matrix.build == 'linux' || matrix.build == 'macos'
         run: strip "target/${{ matrix.target }}/release/rstr"
 
       - name: Build archive
+        if: matrix.build != 'deb'
         shell: bash
         run: |
           build_name="rstr-${{ needs.create-release.outputs.rstr_version }}-${{ matrix.target }}"
@@ -87,6 +93,13 @@ jobs:
           cp "target/${{ matrix.target }}/release/rstr" "$build_name/"
           tar czf "$build_name.tar.gz" "$build_name"
           echo "ASSET=$build_name.tar.gz" >> $GITHUB_ENV
+
+      - name: Create debian package
+        if: matrix.build == 'deb'
+        run: |
+          cargo install cargo-deb
+          cargo deb --target ${{ matrix.target }} -p rstr_server
+          echo "ASSET=target/${{ matrix.target }}/debian/rstr_${{ env.RSTR_VERSION }}_amd64.deb"
 
       - name: Upload release archive
         uses: actions/upload-release-asset@v1.0.1
