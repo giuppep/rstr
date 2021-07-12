@@ -98,7 +98,7 @@ jobs:
       - name: Create debian package
         if: matrix.build == 'deb'
         run: |
-          apt-get install -y musl-tools
+          sudo apt-get install -y musl-tools
           cargo install cargo-deb
           cargo deb --target ${{ matrix.target }} -p rstr_server
           echo "ASSET=target/${{ matrix.target }}/debian/rstr_${{ env.RSTR_VERSION }}_amd64.deb"
