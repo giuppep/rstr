@@ -100,7 +100,7 @@ jobs:
           sudo apt-get install -y musl-tools
           cargo install cargo-deb
           cargo deb --target ${{ matrix.target }} -p rstr_server
-          echo "ASSET=target/${{ matrix.target }}/debian/rstr_${{ env.RSTR_VERSION }}_amd64.deb"
+          echo "ASSET=target/${{ matrix.target }}/debian/rstr_${{ needs.create-release.outputs.rstr_version }}_amd64.deb"
         
       - name: Upload release archive
         uses: actions/upload-release-asset@v1.0.1
