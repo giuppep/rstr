@@ -71,7 +71,7 @@ jobs:
           override: true
           target: ${{ matrix.target }}
 
-      - name: Build release binaryls
+      - name: Build release binary
         if: matrix.build != 'deb'
         uses: actions-rs/cargo@v1
         with:
@@ -96,11 +96,12 @@ jobs:
 
       - name: Create debian package
         if: matrix.build == 'deb'
+        shell: bash
         run: |
           sudo apt-get install -y musl-tools
           cargo install cargo-deb
           cargo deb --target ${{ matrix.target }} -p rstr_server
-          echo "ASSET=target/${{ matrix.target }}/debian/rstr_${{ needs.create-release.outputs.rstr_version }}_amd64.deb"
+          echo "ASSET=target/${{ matrix.target }}/debian/rstr_${{ needs.create-release.outputs.rstr_version }}_amd64.deb" >> $GITHUB_ENV
         
       - name: Upload release archive
         uses: actions/upload-release-asset@v1.0.1
