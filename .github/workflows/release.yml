@@ -4,54 +4,55 @@ name: Release
 on:
   push:
     branches:
-      - $default-branch
-    tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
+      - action-debian-package
+#     tags:
+#       - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.release.outputs.upload_url }}
-      rstr_version: ${{ env.RSTR_VERSION }}
-    steps:
-      - name: Get the release version from the tag
-        shell: bash
-        if: env.RSTR_VERSION == ''
-        run: |
-          echo "RSTR_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          echo "version is: $RSTR_VERSION"
-      - name: Create GitHub release
-        id: release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.RSTR_VERSION }}
-          release_name: ${{ env.RSTR_VERSION }}
+#   create-release:
+#     runs-on: ubuntu-latest
+#     outputs:
+#       upload_url: ${{ steps.release.outputs.upload_url }}
+#       rstr_version: ${{ env.RSTR_VERSION }}
+#     steps:
+#       - name: Get the release version from the tag
+#         shell: bash
+#         if: env.RSTR_VERSION == ''
+#         run: |
+#           echo "RSTR_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+#           echo "version is: $RSTR_VERSION"
+#       - name: Create GitHub release
+#         id: release
+#         uses: actions/create-release@v1
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           tag_name: ${{ env.RSTR_VERSION }}
+#           release_name: ${{ env.RSTR_VERSION }}
 
   build-release:
     name: build-release
-    needs:
-      - create-release
+#     needs:
+#       - create-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
-        build: [linux, linux-arm, macos, deb]
+#         build: [linux, linux-arm, macos, deb]
+        build: [deb]
         include:
-          - build: linux
-            os: ubuntu-18.04
-            rust: nightly
-            target: x86_64-unknown-linux-musl
-          - build: linux-arm
-            os: ubuntu-18.04
-            rust: nightly
-            target: arm-unknown-linux-gnueabihf
-          - build: macos
-            os: macos-latest
-            rust: nightly
-            target: x86_64-apple-darwin
+#           - build: linux
+#             os: ubuntu-18.04
+#             rust: nightly
+#             target: x86_64-unknown-linux-musl
+#           - build: linux-arm
+#             os: ubuntu-18.04
+#             rust: nightly
+#             target: arm-unknown-linux-gnueabihf
+#           - build: macos
+#             os: macos-latest
+#             rust: nightly
+#             target: x86_64-apple-darwin
           - build: deb
             os: ubuntu-18.04
             rust: nightly
@@ -96,19 +97,17 @@ jobs:
 
       - name: Create debian package
         if: matrix.build == 'deb'
-        id: debbuild
-        uses: ebbflow-io/cargo-deb-amd64-ubuntu@1.0
+        run: |
+          cross install cargo-deb
+          cross deb --target ${{ matrix.target }} -p rstr_server
+          echo "ASSET=target/${{ matrix.target }}/debian/rstr_${{ env.RSTR_VERSION }}_amd64.deb"
         
-      - name: Add debian package to upload folder
-        if: matrix.build == 'deb'
-        run: echo "ASSET=target/${{ matrix.target }}/debian/rstr_${{ env.RSTR_VERSION }}_amd64.deb"
-        
-      - name: Upload release archive
-        uses: actions/upload-release-asset@v1.0.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ env.ASSET }}
-          asset_name: ${{ env.ASSET }}
-          asset_content_type: application/octet-stream
+#       - name: Upload release archive
+#         uses: actions/upload-release-asset@v1.0.1
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           upload_url: ${{ needs.create-release.outputs.upload_url }}
+#           asset_path: ${{ env.ASSET }}
+#           asset_name: ${{ env.ASSET }}
+#           asset_content_type: application/octet-stream
