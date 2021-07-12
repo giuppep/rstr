@@ -32,8 +32,8 @@ jobs:
 
   build-release:
     name: build-release
-#     needs:
-#       - create-release
+    needs:
+      - create-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
