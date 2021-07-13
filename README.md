@@ -10,7 +10,20 @@ After uploading a file to the blob store you will receive a unique reference to 
 
 ## Installation
 
-TODO
+### MacOS
+On MacOs, you can install `rstr` using [`homebrew`](https://brew.sh/)
+```bash
+brew tap giuppep/tap && brew install rstr
+```
+
+### Debian based Linux distribution (e.g. Ubuntu)
+A `.deb` package is provided in each [release](https://github.com/giuppep/rstr/releases):
+```bash
+version=0.1.0
+curl -LO https://github.com/giuppep/rstr/releases/download/$version/rstr_${version}_amd64.deb
+sudo dpkg -i rstr_${version}_amd64.deb
+```
+
 ## Usage
 
 `rstr` provides both a CLI and a web server with a REST API to upload/get/delete blobs.
@@ -24,7 +37,7 @@ rstr server start
 ```
 You can specify a port to run on with `--port $PORT_NUMBER`; it defaults to port `3123`.
 
-See the full [API Documentation](api.md) for more details.
+See the full [API Documentation](https://giuppep.github.io/rstr/openapi) for more details.
 
 A complete `Python` API client is available [here](https://github.com/giuppep/rstr-client).
 
@@ -32,7 +45,7 @@ A complete `Python` API client is available [here](https://github.com/giuppep/rs
 
 First of all, you'll neet to generate a token for authentication by running
 ```bash
-rstr generate-token
+rstr server generate-token
 ```
 Copy the token to the client machine and save it into an environment variable: `export TOKEN=<my_token>`.
 
