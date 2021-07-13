@@ -32,7 +32,7 @@ A complete `Python` API client is available [here](https://github.com/giuppep/rs
 
 First of all, you'll neet to generate a token for authentication by running
 ```bash
-rstr generate-token
+rstr server generate-token
 ```
 Copy the token to the client machine and save it into an environment variable: `export TOKEN=<my_token>`.
 

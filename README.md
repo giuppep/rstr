@@ -37,7 +37,7 @@ rstr server start
 ```
 You can specify a port to run on with `--port $PORT_NUMBER`; it defaults to port `3123`.
 
-See the full [API Documentation](api.md) for more details.
+See the full [API Documentation](https://giuppep.github.io/rstr/openapi) for more details.
 
 A complete `Python` API client is available [here](https://github.com/giuppep/rstr-client).
 
@@ -45,7 +45,7 @@ A complete `Python` API client is available [here](https://github.com/giuppep/rs
 
 First of all, you'll neet to generate a token for authentication by running
 ```bash
-rstr generate-token
+rstr server generate-token
 ```
 Copy the token to the client machine and save it into an environment variable: `export TOKEN=<my_token>`.
 
