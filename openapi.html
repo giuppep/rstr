@@ -3,10 +3,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>Swagger UI</title>
-    <link rel="stylesheet" type="text/css" href="dist/swagger-ui.css" />
-    <link rel="icon" type="image/png" href="dist/favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" type="image/png" href="dist/favicon-16x16.png" sizes="16x16" />
+    <title>rstr API documentation</title>
+    <link rel="stylesheet" type="text/css" href="api_docs/dist/swagger-ui.css" />
+    <link rel="icon" type="image/png" href="api_docs/dist/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="api_docs/dist/favicon-16x16.png" sizes="16x16" />
     <style>
       html
       {
@@ -33,13 +33,13 @@
   <body>
     <div id="swagger-ui"></div>
 
-    <script src="dist/swagger-ui-bundle.js" charset="UTF-8"> </script>
-    <script src="dist/swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
+    <script src="api_docs/dist/swagger-ui-bundle.js" charset="UTF-8"> </script>
+    <script src="api_docs/dist/swagger-ui-standalone-preset.js" charset="UTF-8"> </script>
     <script>
     window.onload = function() {
       // Begin Swagger UI call region
       const ui = SwaggerUIBundle({
-        url: "openapi.yml",
+        url: "api_docs/openapi.yml",
         dom_id: '#swagger-ui',
         deepLinking: true,
         presets: [
