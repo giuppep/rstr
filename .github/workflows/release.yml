@@ -101,8 +101,10 @@ jobs:
           sudo apt-get install -y musl-tools
           cargo install cargo-deb
           cargo deb --target ${{ matrix.target }} -p rstr_server
-          echo "ASSET=target/${{ matrix.target }}/debian/rstr_${{ needs.create-release.outputs.rstr_version }}_amd64.deb" >> $GITHUB_ENV
-        
+          deb_pkg=rstr_${{ needs.create-release.outputs.rstr_version }}_amd64.deb
+          mv target/${{ matrix.target }}/debian/$deb_pkg .
+          echo "ASSET=$deb_pkg" >> $GITHUB_ENV
+          
       - name: Upload release archive
         uses: actions/upload-release-asset@v1.0.1
         env:
