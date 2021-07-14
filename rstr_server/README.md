@@ -8,9 +8,6 @@ After uploading a file to the blob store you will receive a unique reference to 
 - A simple CLI interface for adding/checking/deleting blobs from the blob store
 - A web server with a REST API for interacting with your blobs remotely.
 
-## Installation
-
-TODO
 ## Usage
 
 `rstr` provides both a CLI and a web server with a REST API to upload/get/delete blobs.
@@ -24,7 +21,7 @@ rstr server start
 ```
 You can specify a port to run on with `--port $PORT_NUMBER`; it defaults to port `3123`.
 
-See the full [API Documentation](api.md) for more details.
+See the full [API Documentation](https://giuppep.github.io/rstr/openapi) for more details.
 
 A complete `Python` API client is available [here](https://github.com/giuppep/rstr-client).
 
@@ -57,7 +54,8 @@ date: Sat, 19 Jun 2021 22:43:01 GMT
 
 The hash can then be used to retrieve the file
 ```bash
-curl -O https://my-rstr-url.rs/blobs/c1d18efa9781db45217d594b75e31801318fd1834358c081487fb716ac8139ef \
+BLOB_HASH=c1d18efa9781db45217d594b75e31801318fd1834358c081487fb716ac8139ef
+curl -O https://my-rstr-url.rs/blobs/$BLOB_HASH \
 -H "X-Auth-Token: $TOKEN"
 ```
 
@@ -125,4 +123,4 @@ token_store_path = "/home/giuppep/.config/rstr/.tokens"
 
 Copyright (c) 2021 giuppep
 
-`rstr` is made available under the [MIT License](LICENSE)
+`rstr` is made available under the [MIT License](../LICENSE)
