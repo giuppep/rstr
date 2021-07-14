@@ -2,6 +2,10 @@ openapi: "3.0.2"
 info:
   title: rstr
   version: "1.0"
+  description: A simple content-addressable blob store
+  license:
+    name: "MIT"
+    url: "https://mit-license.org/"
 
 servers:
   - url: "http://localhost:{port}/"
@@ -85,9 +89,17 @@ components:
         format: date-time
       example: "2021-06-09T19:29:05.856119481+00:00"
 
+tags:
+  - name: blobs
+    description: Interact with the blob store
+  - name: utils
+    description: Utilities
+
 paths:
   /status:
     get:
+      tags: [utils]
+      operationId: getStatus
       description: Check the status of the server
       responses:
         "200":
@@ -95,6 +107,8 @@ paths:
 
   /blobs:
     post:
+      tags: [blobs]
+      operationId: uploadBlobs
       description: Add a file to the blob store
       responses:
         "200":
@@ -131,7 +145,15 @@ paths:
         required: true
         description: Unique reference to the blob (its sha256 hash)
     get:
+      tags: [blobs]
+      operationId: downloadBlob
       description: Retrieve a blob from the blob store
+      # parameters:
+      #   - in: query
+      #     name: base64
+      #     schema:
+      #       type: boolean
+      #     description: whether to encode the response as base64
       responses:
         "200":
           description: OK
@@ -158,6 +180,8 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     head:
+      tags: [blobs]
+      operationId: getBlobMetadata
       description: Retrieve a blob's metadata
       responses:
         "200":
@@ -179,6 +203,8 @@ paths:
           description: The blob was not found
 
     delete:
+      tags: [blobs]
+      operationId: deleteBlob
       description: Delete a blob
       responses:
         "204":
