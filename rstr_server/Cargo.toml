@@ -21,7 +21,7 @@ clap = "2.33.0"
 actix-web = "3"
 actix-multipart = "0.3.0"
 actix-rt = "2.2.0"
-futures = "0.3.1"
+futures = "0.3.16"
 sanitize-filename = "0.3.0"
 env_logger = "0.8.3"
 log = { version = "0.4.14", features = ["serde"] }
