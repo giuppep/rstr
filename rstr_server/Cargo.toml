@@ -27,7 +27,7 @@ env_logger = "0.8.3"
 log = { version = "0.4.14", features = ["serde"] }
 uuid = { version = "0.8", features = ["v4"] }
 directories = "3.0.2"
-serde = { version = "1.0.126", features = ["derive"] }
+serde = { version = "1.0.127", features = ["derive"] }
 toml = "0.5.8"
 
 [package.metadata.deb]
