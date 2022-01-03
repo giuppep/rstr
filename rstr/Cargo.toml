@@ -12,7 +12,7 @@ keywords = ["blob-store"]
 
 [dependencies]
 sha2 = "0.10.0"
-tree_magic_mini = "3.0.2"
+tree_magic_mini = "3.0.3"
 ignore = "0.4"
 chrono = "0.4.19"
 indicatif = { version = "0.16.2", optional = true }
