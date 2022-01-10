@@ -11,7 +11,7 @@ categories = ["filesystem"]
 keywords = ["blob-store"]
 
 [dependencies]
-sha2 = "0.10.0"
+sha2 = "0.10.1"
 tree_magic_mini = "3.0.3"
 ignore = "0.4"
 chrono = "0.4.19"
