@@ -152,9 +152,9 @@ dependencies = [
 
 [[package]]
 name = "actix-rt"
-version = "2.5.1"
+version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82cf33e04d9911b39bfb7be3c01309568b4315895d3358372dce64ed2c2bf32d"
+checksum = "7ea16c295198e958ef31930a6ef37d0fb64e9ca3b6116e6b93a8bdae96ee1000"
 dependencies = [
  "actix-macros 0.2.3",
  "futures-core",
@@ -1611,7 +1611,7 @@ name = "rstr_server"
 version = "0.1.0"
 dependencies = [
  "actix-multipart",
- "actix-rt 2.5.1",
+ "actix-rt 2.7.0",
  "actix-web",
  "clap",
  "directories",
